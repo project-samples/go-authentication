@@ -1,0 +1,168 @@
+server:
+  name: go-authentication
+  port: 8080
+
+mongo:
+  uri: mongodb://localhost:27017
+  database: authentication
+redis:
+  url: redis://localhost:6379
+
+mail:
+  from:
+    name: Supporter
+    address: test@gmail.com
+  provider: sendgrid
+  api_key:
+  smtp:
+    host: smtp.gmail.com
+    port: 587
+    username: test@gmail.com
+    password:
+
+max_password_failed: 5
+locked_minutes: 60
+max_password_age: 90
+password_encryption_key:
+
+token:
+  secret: secretauthentication
+  expires: 86400000
+payload:
+  ip: ip
+  user_id: userId
+  username: username
+  contact: email
+  user_type: roleId
+
+callback_url:
+  microsoft: http://localhost:3001/auth/connect/oauth2
+  amazon: http://localhost:3001/index.html?redirect=oauth2
+  twitter: http://localhost:3001/index.html?redirect=oauth2
+
+status:
+  deactivated: D
+  suspended: S
+  disable: E
+auth:
+  expires: 3600
+  template:
+    subject: "%s Verification Code"
+    body: "%s Use this code for verification"
+  schema:
+    id: userId
+    user_name: userName
+    success_time: successTime
+    fail_time: failTime
+    fail_count: failCount
+    locked_until_time: lockedUntilTime
+    roles: roles
+    password: password
+    password_changed_time: passwordModifiedTime
+    status: status
+    contact: email
+    display_name: displayName
+    max_password_age: maxPasswordAge
+    user_type: userType
+    access_date_from: accessDateFrom
+    access_date_to: accessDateTo
+    is_two_factor: isTwoFactor
+
+auth_sql:
+  query: select user_id as userid, username, email as contact, display_name as displayname, status from user where username = ?
+  pass: update users set last_login = ? where user_id = ?
+  disable: D
+
+sign_up:
+  expires: 3600
+  user_verified:
+    secure: false
+    domain: localhost
+    port: 3002
+    action: /signup/verify
+  user_status:
+    registered: R
+    verifying: V
+    activated: A
+  schema:
+    user_id: userId
+    user_name: userName
+    contact: email
+    signed_up_time: signedUpTime
+    language: language
+    max_password_age: maxPasswordAge
+    date_of_birth: dateOfBirth
+    given_name: givenName
+    middle_name: middleName
+    family_name: familyName
+    gender: gender
+    created_time: createdTime
+    created_by: createdBy
+    updated_time: updatedTime
+    updated_by: updatedBy
+    version: version
+  template:
+    subject: Verify your email address
+    body: |
+      Please click this link to confirm to activate your account:<br><a href="%s">Confirm Now</a><br><br>
+      If the above button doesn't work for you, please click on the below link or copy paste it on to your browser<br>
+      <a href="%s">%s</a><br><br>
+      Your link will expire after "%s" minutes.
+      <br><br><br>
+      Hẫy nhấn đường link ở đây để kích hoạt cài khoản của bạn: <br><a href="%s">Xác nhận</a><br><br>
+      Nếu đường link đó không hoạt động, hãy sao chép đường link đó và dán vào trình duyệt web của bạn<br>
+      <a href="%s">%s</a><br><br>
+      Đường link này sẽ hết hạn sau "%s" phút.
+
+oauth2:
+  services: google
+  schema:
+    user_id: userId
+    user_name: userName
+    email: email
+    status: status
+    oauth2_email: Email
+    account: Account
+    active: Active
+    picture: picture
+    locale: language
+    gender: gender
+    date_of_birth: dateOfBirth
+    given_name: givenName
+    middle_name: middleName
+    family_name: familyName
+    display_name: displayName
+    created_time: createdTime
+    created_by: createdBy
+    updated_time: updatedTime
+    updated_by: updatedBy
+    version: version
+
+password:
+  exp1: '.{8,}'
+  exp2: '([a-z]){1,}'
+  exp3: '([A-Z]){1,}'
+  exp4: '([\d]){1,}'
+  change_expires: 420
+  reset_expires: 420
+  schema:
+    user_id: userId
+    user_name: userName
+    to_address: email
+    password: password
+    changed_time: passwordModifiedTime
+    fail_count: failCount
+    changed_by: changedBy
+    timestamp: timestamp
+    history: history
+  template:
+    reset:
+      subject: Passcode to reset password
+      body: |
+        Your user name is '%s'. This is the passcode to reset your password: %s. This passcode will expire in %s minutes.
+        Tên đăng nhập của bạn là '%s'. Hãy dùng mã sau để tạo mật khẩu lại: %s. Mã này sẽ hết hạn trong %s phút.
+    change:
+      subject: Passcode to change password
+      body: |
+        Your user name is '%s'. This is the passcode to reset your password: %s. This passcode will expire in %s minutes.
+        Tên đăng nhập của bạn là '%s'. Hãy dùng mã sau để thay đổi mật khẩu: %s. Mã này sẽ hết hạn trong %s phút.
