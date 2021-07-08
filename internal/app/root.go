@@ -12,9 +12,9 @@ import (
 )
 
 type Root struct {
-	Server ServerConfig `mapstructure:"server"`
-	Mongo  MongoConfig  `mapstructure:"mongo"`
-	Redis  redis.Config `mapstructure:"redis"`
+	Server    ServerConfig    `mapstructure:"server"`
+	Cassandra CassandraConfig `mapstructure:"cassandra"`
+	Redis     redis.Config    `mapstructure:"redis"`
 
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`
@@ -37,7 +37,6 @@ type ServerConfig struct {
 	Name string `mapstructure:"name" json:"name,omitempty" gorm:"column:name" bson:"name,omitempty" dynamodbav:"name,omitempty" firestore:"name,omitempty"`
 	Port *int64 `mapstructure:"port" json:"port,omitempty" gorm:"column:port" bson:"port,omitempty" dynamodbav:"port,omitempty" firestore:"port,omitempty"`
 }
-type MongoConfig struct {
-	Uri      string `mapstructure:"uri" json:"uri,omitempty" gorm:"column:uri" bson:"uri,omitempty" dynamodbav:"uri,omitempty" firestore:"uri,omitempty"`
-	Database string `mapstructure:"database" json:"database,omitempty" gorm:"column:database" bson:"database,omitempty" dynamodbav:"database,omitempty" firestore:"database,omitempty"`
+type CassandraConfig struct {
+	Uri string `mapstructure:"uri" json:"uri,omitempty" gorm:"column:uri" bson:"uri,omitempty" dynamodbav:"uri,omitempty" firestore:"uri,omitempty"`
 }
