@@ -4,34 +4,32 @@ import (
 	"context"
 	"strings"
 
-	ca "go-service/cassandra"
+	ca "github.com/core-go/cassandra"
 
 	. "github.com/core-go/auth"
 	"github.com/core-go/redis"
 
-	// am "github.com/core-go/auth/mongo"
+	am "github.com/core-go/auth/cassandra"
 	. "github.com/core-go/health"
+	ch"github.com/core-go/health/cassandra"
 	l "github.com/core-go/log"
 
 	. "github.com/core-go/mail"
 	. "github.com/core-go/mail/sendgrid"
 	. "github.com/core-go/mail/smtp"
 
-	// mgo "github.com/core-go/mongo"
 	. "github.com/core-go/oauth2"
+	co "github.com/core-go/oauth2/cassandra"
 
-	// om "github.com/core-go/oauth2/mongo"
-	. "go-service/password"
-	// pm "github.com/core-go/password/mongo"
+	. "github.com/core-go/password"
 
+	pc "github.com/core-go/password/cassandra"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	"github.com/core-go/service/shortid"
 	. "github.com/core-go/signup"
+	sc "github.com/core-go/signup/cassandra"
 	. "github.com/core-go/signup/mail"
-	// sm "github.com/core-go/signup/mongo"
-	// "go.mongodb.org/mongo-driver/mongo"
-	// "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ApplicationContext struct {
@@ -65,7 +63,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	mailService := NewMailService(root.Mail)
 
-	authenticationRepository := ca.NewAuthenticationRepositoryByConfig(cassandra, user, authentication, root.SignUp.UserStatus.Activated, root.UserStatus, root.Auth.Schema)
+	authenticationRepository := am.NewAuthenticationRepositoryByConfig(cassandra, user, authentication, root.SignUp.UserStatus.Activated, root.UserStatus, root.Auth.Schema)
 	userInfoService := NewUserInfoService(authenticationRepository, root.MaxPasswordAge, root.MaxPasswordFailed, root.LockedMinutes)
 	bcryptComparator := &BCryptStringComparator{}
 	tokenService := NewTokenService()
@@ -77,7 +75,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	signOutHandler := NewSignOutHandler(tokenService.VerifyToken, root.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
-	passwordRepository := ca.NewPasswordRepositoryByConfig(cassandra, user, authentication, authentication, "userId", root.Password.Schema)
+	passwordRepository := pc.NewPasswordRepositoryByConfig(cassandra, user, authentication, authentication, "userId", root.Password.Schema)
 	passResetCodeRepository := ca.NewPasscodeRepository(cassandra, passwordResetCode)
 	p := root.Password
 	exps := []string{p.Exp1, p.Exp2, p.Exp3, p.Exp4, p.Exp5, p.Exp6}
@@ -88,7 +86,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	passwordHandler := NewPasswordHandler(passwordService, logError, nil)
 
 	signUpCode := "signupCode"
-	signUpRepository := ca.NewSignUpRepositoryByConfig(cassandra, user, authentication, root.SignUp.UserStatus, root.MaxPasswordAge, root.SignUp.Schema, nil)
+	signUpRepository := sc.NewSignUpRepositoryByConfig(cassandra, user, authentication, root.SignUp.UserStatus, root.MaxPasswordAge, root.SignUp.Schema, nil)
 	signUpCodeRepository := ca.NewPasscodeRepository(cassandra, signUpCode)
 	signupStatus := InitSignUpStatus(root.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
@@ -110,15 +108,15 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	services := strings.Split(root.OAuth2.Services, ",")
 	userRepositories := make(map[string]UserRepository)
 	for _, source := range sources {
-		userRepository := ca.NewUserRepositoryByConfig(cassandra, user, source, activatedStatus, services, schema, &root.UserStatus)
+		userRepository := co.NewUserRepositoryByConfig(cassandra, user, source, activatedStatus, services, schema, &root.UserStatus)
 		userRepositories[source] = userRepository
 	}
-	configurationRepository := ca.NewConfigurationRepository(cassandra, integrationConfiguration, oauth2UserRepositories, "status", "A")
+	configurationRepository := co.NewConfigurationRepository(cassandra, integrationConfiguration, oauth2UserRepositories, "status", "A")
 
 	oauth2Service := NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, root.Token, nil)
 	oauth2Handler := NewDefaultOAuth2Handler(oauth2Service, status.Error, logError)
 
-	mongoHealthChecker := ca.NewHealthChecker(cassandra)
+	mongoHealthChecker := ch.NewHealthChecker(cassandra)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)

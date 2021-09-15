@@ -3,17 +3,18 @@ module go-service
 go 1.16
 
 require (
-	github.com/core-go/auth v0.1.1 // indirect
+	github.com/core-go/auth v0.1.2 // indirect
+	github.com/core-go/cassandra v0.0.0 // indirect
 	github.com/core-go/config v0.1.0 // indirect
 	github.com/core-go/health v0.4.6 // indirect
 	github.com/core-go/log v0.0.7 // indirect
 	github.com/core-go/mail v0.0.0 // indirect
-	github.com/core-go/oauth2 v0.1.0 // indirect
-	github.com/core-go/password v0.0.0 // indirect
+	github.com/core-go/oauth2 v0.1.1 // indirect
+	github.com/core-go/password v0.1.0 // indirect
 	github.com/core-go/redis v0.0.1 // indirect
 	github.com/core-go/security v0.1.0 // indirect
 	github.com/core-go/service v0.1.3 // indirect
-	github.com/core-go/signup v0.0.0 // indirect
+	github.com/core-go/signup v0.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/gocql/gocql v0.0.0-20210621133426-d83b80dfb480 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect

@@ -10,9 +10,9 @@ redis:
 mail:
   from:
     name: Supporter
-    address: 
+    address: pnhattuan@tma.com.vn
   provider: sendgrid
-  api_key: 
+  api_key: xxxsendgrid_keyxxxx
   smtp:
     host: smtp.gmail.com
     port: 587

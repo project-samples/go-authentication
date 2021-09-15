@@ -66,7 +66,7 @@ const (
 						primary key (clientId)
 	)`
 	CreateHistoryType = `CREATE TYPE IF NOT EXiSTS authentication.historytype (password varchar, timestamp timestamp)`
-	ConfigGoogle      = `INSERT INTO authentication.integrationconfiguration (clientId, sourceType, clientSecret) VALUES ('xxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com', 'google', '-xxxxxxxxxxxxxxxxxxxxxxxxx' ) `
+	ConfigGoogle      = `INSERT INTO authentication.integrationconfiguration (clientId, sourceType, clientSecret) VALUES ('590476077434-akbvo7usm6njup6ctiignt38adbecvpa.apps.googleusercontent.com', 'google', '-5gsoTyP8WDT3g2QPz-p5HTM' ) `
 )
 
 func Db(root *Root) (*gocql.ClusterConfig, error) {
@@ -74,9 +74,9 @@ func Db(root *Root) (*gocql.ClusterConfig, error) {
 	cluster.Consistency = gocql.Quorum
 	cluster.ProtoVersion = 4
 	cluster.ConnectTimeout = time.Second * 10
+	cluster.Authenticator = gocql.PasswordAuthenticator{Username: "cassandra", Password: "cassandra"}
 	session, err := cluster.CreateSession()
 	if err != nil {
-
 		return nil, err
 	}
 	err = session.Query(CreateKeyspace).Exec()
