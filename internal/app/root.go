@@ -8,14 +8,16 @@ import (
 	. "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis"
+	sv "github.com/core-go/service"
 	. "github.com/core-go/signup/mail"
 )
 
 type Root struct {
-	Server ServerConfig `mapstructure:"server"`
-	Mongo  MongoConfig  `mapstructure:"mongo"`
-	Redis  redis.Config `mapstructure:"redis"`
-
+	Server                ServerConfig `mapstructure:"server"`
+	Mongo                 MongoConfig  `mapstructure:"mongo"`
+	Redis                 redis.Config `mapstructure:"redis"`
+	StatusUser            *sv.StatusConfig
+	Action                *sv.ActionConfig
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`
 	MaxPasswordAge        int32                         `mapstructure:"max_password_age"`

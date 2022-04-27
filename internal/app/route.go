@@ -13,7 +13,7 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 	}
 	r.HandleFunc("/health", app.HealthHandler.Check).Methods(GET)
 
-	r.HandleFunc("/authentication/authenticate", app.AuthenticationHandler.Authenticate).Methods(POST)
+	r.HandleFunc("/authentication", app.AuthenticationHandler.Authenticate).Methods(POST)
 	r.HandleFunc("/authentication/signout/{username}", app.SignOutHandler.SignOut).Methods(GET)
 
 	r.HandleFunc("/password/change", app.PasswordHandler.ChangePassword).Methods(POST)
@@ -27,5 +27,6 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 	r.HandleFunc("/oauth2/configurations", app.OAuth2Handler.Configurations).Methods(GET)
 	r.HandleFunc("/oauth2/authenticate", app.OAuth2Handler.Authenticate).Methods(POST)
 
+	r.HandleFunc("/users", app.User.Search).Methods(GET)
 	return err
 }

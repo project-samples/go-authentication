@@ -2,6 +2,12 @@ package app
 
 import (
 	"context"
+	"github.com/core-go/search"
+	mq "github.com/core-go/search/mongo"
+	sv "github.com/core-go/service"
+	v "github.com/core-go/service/v10"
+	"go-service/internal/myprofile"
+	"reflect"
 	"strings"
 
 	. "github.com/core-go/auth"
@@ -34,6 +40,7 @@ type ApplicationContext struct {
 	PasswordHandler       *PasswordHandler
 	SignUpHandler         *SignUpHandler
 	OAuth2Handler         *OAuth2Handler
+	User                  myprofile.UserHandler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -116,6 +123,16 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
+	statusUser := sv.InitializeStatus(root.StatusUser)
+	action := sv.InitializeAction(root.Action)
+	validator := v.NewValidator()
+	userType := reflect.TypeOf(User{})
+	userQuery := mq.UseQuery(userType)
+	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "users", userQuery, search.GetSort)
+	userRepository := mgo.NewRepository(mongoDb, "users", userType)
+	userService := myprofile.NewUserService(userRepository)
+	userHandler := myprofile.NewUserHandler(userSearchBuilder.Search, userService, statusUser, logError, validator.Validate, &action)
+
 	app := ApplicationContext{
 		HealthHandler:         healthHandler,
 		AuthenticationHandler: authenticationHandler,
@@ -123,6 +140,7 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 		PasswordHandler:       passwordHandler,
 		SignUpHandler:         signupHandler,
 		OAuth2Handler:         oauth2Handler,
+		User:                  userHandler,
 	}
 	return &app, nil
 }
