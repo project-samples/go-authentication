@@ -27,6 +27,12 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 	r.HandleFunc("/oauth2/configurations", app.OAuth2Handler.Configurations).Methods(GET)
 	r.HandleFunc("/oauth2/authenticate", app.OAuth2Handler.Authenticate).Methods(POST)
 
-	r.HandleFunc("/users", app.User.Search).Methods(GET)
+	r.HandleFunc("/my-profile", app.User.Create).Methods(PATCH)
+	r.HandleFunc("/my-profile/{id}", app.User.Patch).Methods(PATCH)
+	r.HandleFunc("/my-profile/{id}", app.User.Load).Methods(GET)
+	r.HandleFunc("/my-profile/search", app.User.Search).Methods(GET, POST)
+	r.HandleFunc("/my-profile/{id}", app.User.Delete).Methods(DELETE)
+	r.HandleFunc("/my-profile/settings/{id}", app.User.GetMySetting).Methods(GET)
+	r.HandleFunc("/my-profile/settings/{id}", app.User.SaveMySetting).Methods(PATCH)
 	return err
 }

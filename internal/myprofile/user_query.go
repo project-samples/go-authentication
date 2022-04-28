@@ -59,6 +59,11 @@ func BuildQuery(filter interface{}) (query string, params []interface{}) {
 		params = append(params, "%"+s.Phone+"%")
 		i++
 	}
+	if len(s.FirstName) > 0 {
+		where = append(where, fmt.Sprintf(`first_name ilike %s`, q.BuildDollarParam(i)))
+		params = append(params, "%"+s.FirstName+"%")
+		i++
+	}
 	if s.Settings != nil {
 		params = append(params, s.Settings)
 		where = append(where, fmt.Sprintf(`settings && %s`, q.BuildDollarParam(i)))
