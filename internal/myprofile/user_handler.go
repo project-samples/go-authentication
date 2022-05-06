@@ -43,7 +43,8 @@ func (u *userHandler) Load(w http.ResponseWriter, r *http.Request) {
 
 func (u *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var user User
-
+	user.Phone = ""
+	user.Username = ""
 	er1 := sv.Decode(w, r, &user)
 	if er1 == nil {
 		errors, er2 := u.Validate(r.Context(), &user)
@@ -58,14 +59,40 @@ func (h *userHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	var user User
 	r, json, er1 := sv.BuildMapAndCheckId(w, r, &user, h.Keys, h.Indexes)
 	if er1 == nil {
+		id := sv.GetRequiredParam(w, r)
+		if len(id) > 0 {
+			result, err := h.service.Load(r.Context(), id)
+			if err != nil {
+				sv.RespondModel(w, r, result, err, h.Error, nil)
+			}
+			if result != nil {
+				errors, er2 := h.Validate(r.Context(), &user)
+				if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
+					result1, er3 := h.service.Update(r.Context(), &user)
+					sv.HandleResult(w, r, json, result1, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
+				}
+			} else {
+				errors, er2 := h.Validate(r.Context(), &user)
+				if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
+					result1, er3 := h.service.Create(r.Context(), &user)
+					sv.HandleResult(w, r, json, result1, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
+				}
+			}
+		}
+
+	}
+}
+func (h *userHandler) Update(w http.ResponseWriter, r *http.Request) {
+	var user User
+	er1 := sv.DecodeAndCheckId(w, r, &user, h.Keys, h.Indexes)
+	if er1 == nil {
 		errors, er2 := h.Validate(r.Context(), &user)
-		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
-			result, er3 := h.service.Patch(r.Context(), json)
-			sv.HandleResult(w, r, json, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
+		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Update) {
+			result, er3 := h.service.Update(r.Context(), &user)
+			sv.HandleResult(w, r, &user, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Update)
 		}
 	}
 }
-
 func (h *userHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := sv.GetRequiredParam(w, r)
 	if len(id) > 0 {

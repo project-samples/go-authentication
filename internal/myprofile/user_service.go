@@ -46,3 +46,13 @@ func (s *userService) Load(ctx context.Context, id string) (*User, error) {
 func (s *userService) Create(ctx context.Context, user *User) (int64, error) {
 	return s.repository.Insert(ctx, user)
 }
+
+func (s *userService) FindUserById(ctx context.Context, id string) (*User, error) {
+	var user User
+	ok, err := s.repository.LoadAndDecode(ctx, id, &user)
+	if !ok {
+		return nil, err
+	} else {
+		return &user, err
+	}
+}
