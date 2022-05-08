@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
 	. "github.com/core-go/auth"
@@ -17,6 +18,7 @@ import (
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
 	"github.com/core-go/redis"
+	"github.com/core-go/search"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	"github.com/core-go/service/shortid"
@@ -25,15 +27,18 @@ import (
 	sm "github.com/core-go/signup/mongo"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	usr "go-service/internal/usecase/user"
 )
 
 type ApplicationContext struct {
-	HealthHandler         *Handler
-	AuthenticationHandler *AuthenticationHandler
-	SignOutHandler        *SignOutHandler
-	PasswordHandler       *PasswordHandler
-	SignUpHandler         *SignUpHandler
-	OAuth2Handler         *OAuth2Handler
+	Health         *Handler
+	Authentication *AuthenticationHandler
+	SignOut        *SignOutHandler
+	Password       *PasswordHandler
+	SignUp         *SignUpHandler
+	OAuth2         *OAuth2Handler
+	User           usr.UserHandler
 }
 
 func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
@@ -114,15 +119,21 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
 
+	userType := reflect.TypeOf(usr.User{})
+	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", usr.BuildQuery, search.GetSort)
+	getUser := mgo.UseGet(mongoDb, "user", userType)
+	userHandler := usr.NewUserHandler(userSearchBuilder.Search, getUser, logError, nil)
+
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
 	app := ApplicationContext{
-		HealthHandler:         healthHandler,
-		AuthenticationHandler: authenticationHandler,
-		SignOutHandler:        signOutHandler,
-		PasswordHandler:       passwordHandler,
-		SignUpHandler:         signupHandler,
-		OAuth2Handler:         oauth2Handler,
+		Health:         healthHandler,
+		Authentication: authenticationHandler,
+		SignOut:        signOutHandler,
+		Password:       passwordHandler,
+		SignUp:         signupHandler,
+		OAuth2:         oauth2Handler,
+		User:           userHandler,
 	}
 	return &app, nil
 }

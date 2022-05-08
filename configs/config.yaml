@@ -1,10 +1,10 @@
 server:
   name: go-authentication
-  port: 8080
+  port: 8082
 
 mongo:
-  uri: mongodb://localhost:27017
-  database: authentication
+  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
+  database: user
 redis:
   url: redis://localhost:6379
 
