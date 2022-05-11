@@ -2,9 +2,6 @@ package app
 
 import (
 	"context"
-	"github.com/core-go/search"
-	mq "github.com/core-go/search/mongo"
-	sv "github.com/core-go/service"
 	v "github.com/core-go/service/v10"
 	"go-service/internal/myprofile"
 	"reflect"
@@ -123,15 +120,15 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
-	statusUser := sv.InitializeStatus(root.StatusUser)
-	action := sv.InitializeAction(root.Action)
+	//statusUser := sv.InitializeStatus(root.StatusUser)
+	//action := sv.InitializeAction(root.Action)
 	validator := v.NewValidator()
+
 	userType := reflect.TypeOf(User{})
-	userQuery := mq.UseQuery(userType)
-	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "users", userQuery, search.GetSort)
-	userRepository := mgo.NewRepository(mongoDb, "users", userType)
+	//userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", userQuery, search.GetSort)
+	userRepository := mgo.NewRepository(mongoDb, "user", userType)
 	userService := myprofile.NewUserService(userRepository)
-	userHandler := myprofile.NewUserHandler(userSearchBuilder.Search, userService, statusUser, logError, validator.Validate, &action)
+	userHandler := myprofile.NewUserHandler(userService, validator.Validate)
 
 	app := ApplicationContext{
 		HealthHandler:         healthHandler,

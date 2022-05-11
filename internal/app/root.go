@@ -33,6 +33,7 @@ type Root struct {
 	OAuth2                OAuth2Config                  `mapstructure:"oauth2"`
 	Mail                  MailConfig                    `mapstructure:"mail"`
 	CallBackURL           CallbackURL                   `mapstructure:"callback_url"`
+	Template              bool                          `mapstructure:"template"`
 }
 
 type ServerConfig struct {

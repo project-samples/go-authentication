@@ -30,9 +30,10 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 	//r.HandleFunc("/my-profile", app.User.Patch).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}", app.User.Patch).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}", app.User.Load).Methods(GET)
-	r.HandleFunc("/my-profile/search", app.User.Search).Methods(GET, POST)
+	//r.HandleFunc("/my-profile/search", app.User.Search).Methods(GET, POST)
 	r.HandleFunc("/my-profile/{id}", app.User.Delete).Methods(DELETE)
 	r.HandleFunc("/my-profile/settings/{id}", app.User.GetMySetting).Methods(GET)
 	r.HandleFunc("/my-profile/settings/{id}", app.User.SaveMySetting).Methods(PATCH)
+	//r.HandleFunc("/users/search", app.User.Search).Methods(GET)
 	return err
 }
