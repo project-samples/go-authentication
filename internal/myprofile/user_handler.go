@@ -2,9 +2,11 @@ package myprofile
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	sv "github.com/core-go/service"
+	"io/ioutil"
 	"net/http"
+	"reflect"
 )
 
 type UserHandler interface {
@@ -12,20 +14,23 @@ type UserHandler interface {
 	Load(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)
 	Patch(w http.ResponseWriter, r *http.Request)
+	Update(w http.ResponseWriter, r *http.Request)
 	Delete(w http.ResponseWriter, r *http.Request)
 	GetMySetting(w http.ResponseWriter, r *http.Request)
 	SaveMySetting(w http.ResponseWriter, r *http.Request)
 }
 
-func NewUserHandler(service UserService, validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error)) UserHandler {
+func NewUserHandler(service UserService, status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), action *sv.ActionConfig) UserHandler {
 	//searchModelType := reflect.TypeOf(UserFilter{})
-	//modelType := reflect.TypeOf(User{})
+	modelType := reflect.TypeOf(User{})
+	params := sv.CreateParams(modelType, &status, logError, validate, action)
 	//searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, params.Log)
-	return &userHandler{service: service}
+	return &userHandler{service: service, Params: params}
 }
 
 type userHandler struct {
 	service UserService
+	*sv.Params
 }
 
 func (u *userHandler) Load(w http.ResponseWriter, r *http.Request) {
@@ -36,39 +41,39 @@ func (u *userHandler) Load(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (u *userHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var user User
 	user.Phone = ""
 	user.Username = ""
 	er1 := sv.Decode(w, r, &user)
 	if er1 == nil {
-		//errors, er2 := u.Validate(r.Context(), &user)
-		if !sv.HasError(w, r, nil, nil, 0, nil, nil, "", "") {
-			result, er3 := u.service.Create(r.Context(), &user)
-			sv.AfterCreated(w, r, &user, result, er3, sv.StatusConfig{}, nil, nil, "", "")
+		errors, er2 := h.Validate(r.Context(), &user)
+		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Create) {
+			result, er3 := h.service.Create(r.Context(), &user)
+			sv.AfterCreated(w, r, &user, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Create)
 		}
 	}
 }
 
 func (h *userHandler) Patch(w http.ResponseWriter, r *http.Request) {
 	var user User
-	r, json, er1 := sv.BuildMapAndCheckId(w, r, &user, nil, nil)
+	r, json, er1 := sv.BuildMapAndCheckId(w, r, &user, h.Keys, h.Indexes)
 	if er1 == nil {
-		//errors, er2 := h.Validate(r.Context(), &user)
-		if !sv.HasError(w, r, nil, nil, 0, nil, nil, "", "") {
-			result, er3 := h.service.Update(r.Context(), &user)
-			sv.HandleResult(w, r, json, result, er3, sv.StatusConfig{}, nil, nil, "", "")
+		errors, er2 := h.Validate(r.Context(), &user)
+		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
+			result, er3 := h.service.Patch(r.Context(), json)
+			sv.HandleResult(w, r, json, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
 		}
 	}
 }
 func (h *userHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var user User
-	er1 := sv.DecodeAndCheckId(w, r, &user, nil, nil)
+	er1 := sv.DecodeAndCheckId(w, r, &user, h.Keys, h.Indexes)
 	if er1 == nil {
-		//errors, er2 := h.Validate(r.Context(), &user)
-		if !sv.HasError(w, r, nil, nil, 0, nil, nil, "", "") {
+		errors, er2 := h.Validate(r.Context(), &user)
+		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Patch) {
 			result, er3 := h.service.Update(r.Context(), &user)
-			sv.HandleResult(w, r, &user, result, er3, sv.StatusConfig{}, nil, nil, "", "")
+			sv.HandleResult(w, r, &user, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Patch)
 		}
 	}
 }
@@ -76,7 +81,7 @@ func (h *userHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := sv.GetRequiredParam(w, r)
 	if len(id) > 0 {
 		result, err := h.service.Delete(r.Context(), id)
-		sv.HandleDelete(w, r, result, err, nil, nil, "", "")
+		sv.HandleDelete(w, r, result, err, h.Error, h.Log, h.Resource, h.Action.Delete)
 	}
 }
 
@@ -84,7 +89,7 @@ func (h *userHandler) GetMySetting(w http.ResponseWriter, r *http.Request) {
 	id := sv.GetRequiredParam(w, r)
 	if len(id) > 0 {
 		result, err := h.service.Load(r.Context(), id)
-		sv.RespondModel(w, r, result.Settings, err, nil, nil)
+		sv.RespondModel(w, r, result.Settings, err, h.Error, h.Log)
 	}
 }
 func (h *userHandler) SaveMySetting(w http.ResponseWriter, r *http.Request) {
@@ -92,18 +97,22 @@ func (h *userHandler) SaveMySetting(w http.ResponseWriter, r *http.Request) {
 	var user User
 	id := sv.GetRequiredParam(w, r)
 	if len(id) == 0 {
-		sv.HasError(w, r, nil, nil, 0, nil, nil, "", "")
+		sv.HasError(w, r, nil, nil, 0, h.Error, h.Log, h.Resource, h.Action.Update)
 	}
-	fmt.Println(id)
-	r, json, er1 := sv.BuildMapAndCheckId(w, r, &settings, nil, nil)
-	settings.UserId = id
-	user.Settings = &settings
-	
-	if er1 == nil {
-		//errors, er2 := h.Validate(r.Context(), &user)
-		if !sv.HasError(w, r, nil, nil, 0, nil, nil, "", "") {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		sv.HasError(w, r, nil, err, 0, h.Error, h.Log, h.Resource, h.Action.Update)
+	}
+	err = json.Unmarshal(body, &settings)
+	if err == nil {
+		result1, _ := h.service.Load(r.Context(), id)
+		user = *result1
+		settings.UserId = id
+		user.Settings = &settings
+		errors, er2 := h.Validate(r.Context(), &settings)
+		if !sv.HasError(w, r, errors, er2, *h.Status.ValidationError, h.Error, h.Log, h.Resource, h.Action.Update) {
 			result, er3 := h.service.Update(r.Context(), &user)
-			sv.HandleResult(w, r, json, result, er3, sv.StatusConfig{}, nil, nil, "", "")
+			sv.HandleResult(w, r, user, result, er3, h.Status, h.Error, h.Log, h.Resource, h.Action.Update)
 		}
 	}
 }

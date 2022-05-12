@@ -11,6 +11,7 @@ type UserService interface {
 	Patch(ctx context.Context, user map[string]interface{}) (int64, error)
 	Update(ctx context.Context, user *User) (int64, error)
 	Delete(ctx context.Context, id string) (int64, error)
+	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
 }
 
 func NewUserService(repository sv.Repository) UserService {
@@ -55,4 +56,11 @@ func (s *userService) FindUserById(ctx context.Context, id string) (*User, error
 	} else {
 		return &user, err
 	}
+}
+func (s *userService) SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error) {
+	user := make(map[string]interface{})
+	user["id"] = id
+	settings.UserId = id
+	user["settings"] = settings
+	return s.repository.Patch(ctx, user)
 }
