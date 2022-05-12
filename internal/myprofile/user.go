@@ -61,6 +61,13 @@ type Settings struct {
 	DateTimeFormat string `json:"dateTimeFormat,omitempty" gorm:"column:date_time_format" bson:"dateTimeFormat,omitempty" dynamodbav:"dateTimeFormat,omitempty" firestore:"dateTimeFormat,omitempty"`
 	TimeFormat     string `json:"timeFormat,omitempty" gorm:"column:time_format" bson:"timeFormat,omitempty" dynamodbav:"timeFormat,omitempty" firestore:"timeFormat,omitempty"`
 	Notification   bool   `json:"notification,omitempty" gorm:"column:notification" bson:"notification,omitempty" dynamodbav:"notification,omitempty" firestore:"notification,omitempty"`
+
+	EmailCommentsOfYourPosts       bool `json:"emailCommentsOfYourPosts,omitempty" gorm:"column:emailCommentsOfYourPosts" bson:"emailCommentsOfYourPosts,omitempty" dynamodbav:"emailCommentsOfYourPosts,omitempty" firestore:"emailCommentsOfYourPosts,omitempty"`
+	EmailEventInvitations          bool `json:"emailEventInvitations,omitempty" gorm:"column:emailEventInvitations" bson:"emailEventInvitations,omitempty" dynamodbav:"emailEventInvitations,omitempty" firestore:"emailEventInvitations,omitempty"`
+	EmailFeedUpdates               bool `json:"emailFeedUpdates,omitempty" gorm:"column:emailFeedUpdates" bson:"emailFeedUpdates,omitempty" dynamodbav:"emailFeedUpdates,omitempty" firestore:"emailFeedUpdates,omitempty"`
+	EmailPostMentions              bool `json:"emailPostMentions,omitempty" gorm:"column:emailPostMentions" bson:"emailPostMentions,omitempty" dynamodbav:"emailPostMentions,omitempty" firestore:"emailPostMentions,omitempty"`
+	FollowingListPublicOnMyProfile bool `json:"followingListPublicOnMyProfile,omitempty" gorm:"column:followingListPublicOnMyProfile" bson:"followingListPublicOnMyProfile,omitempty" dynamodbav:"followingListPublicOnMyProfile,omitempty" firestore:"followingListPublicOnMyProfile,omitempty"`
+	SearchEnginesLinksToMyProfile  bool `json:"searchEnginesLinksToMyProfile,omitempty" gorm:"column:searchEnginesLinksToMyProfile" bson:"searchEnginesLinksToMyProfile,omitempty" dynamodbav:"searchEnginesLinksToMyProfile,omitempty" firestore:"searchEnginesLinksToMyProfile,omitempty"`
 }
 
 func (c Settings) Value() (driver.Value, error) {
