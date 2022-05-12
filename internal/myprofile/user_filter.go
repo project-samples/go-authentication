@@ -16,4 +16,5 @@ type UserFilter struct {
 	Skills       []Skills          `json:"skills" gorm:"column:skills" bson:"skills" dynamodbav:"skills" firestore:"skills" validate:""`
 	Achievements []Achievement     `json:"achievements" gorm:"column:achievements" bson:"achievements" dynamodbav:"achievements" firestore:"achievements" validate:""`
 	Settings     *Settings         `json:"settings" gorm:"column:settings" bson:"settings" dynamodbav:"settings" firestore:"settings" validate:""`
+	*search.Filter
 }
