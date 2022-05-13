@@ -37,5 +37,14 @@ func BuildQuery(param interface{}) (bson.D, bson.M) {
 	if len(filter.Phone) > 0 {
 		query = append(query, bson.E{Key: "phone", Value: primitive.Regex{Pattern: fmt.Sprintf("\\w*%v\\w*", filter.Phone)}})
 	}
+	if filter.Interests != nil && len(filter.Interests) > 0 {
+		for _, value := range filter.Interests {
+			query = append(query, bson.E{Key: "interests", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", value)}})
+		}
+		//query = append(query, bson.E{Key: "interests", Value: primitive.Regex{Pattern: fmt.Sprintf("\\w*%v\\w*", filter.Interests), Options: "i"}})
+	}
+	if len(filter.FirstName) > 0 {
+		query = append(query, bson.E{Key: "firstName", Value: primitive.Regex{Pattern: fmt.Sprintf("\\w*%v\\w*", filter.FirstName)}})
+	}
 	return query, fields
 }
