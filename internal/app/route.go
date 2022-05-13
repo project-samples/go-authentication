@@ -36,7 +36,7 @@ func Route(r *mux.Router, context context.Context, root Root) error {
 	//r.HandleFunc("/users/search", app.User.Search).Methods(GET)
 
 	user := "/users"
-	//r.HandleFunc(user+"/search", app.User.Search).Methods(GET, POST)
+	r.HandleFunc(user+"/search", app.User.Search).Methods(GET, POST)
 	r.HandleFunc(user+"/{id}", app.User.Load).Methods(GET)
 	return err
 }

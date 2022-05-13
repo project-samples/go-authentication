@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	_ "github.com/core-go/search"
+	"github.com/core-go/search"
 	sv "github.com/core-go/service"
 	v "github.com/core-go/service/v10"
 	"go-service/internal/myprofile"
@@ -126,10 +126,10 @@ func NewApp(ctx context.Context, root Root) (*ApplicationContext, error) {
 	validator := v.NewValidator()
 	action := sv.InitializeAction(root.Action)
 	userType := reflect.TypeOf(User{})
-	//userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", myprofile.BuildQuery, search.GetSort)
+	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", myprofile.BuildQuery, search.GetSort)
 	userRepository := mgo.NewRepository(mongoDb, "user", userType)
 	userService := myprofile.NewUserService(userRepository)
-	userHandler := myprofile.NewUserHandler(userService, statusUser, logError, validator.Validate, &action)
+	userHandler := myprofile.NewUserHandler(userSearchBuilder.Search, userService, statusUser, logError, validator.Validate, &action)
 
 	app := ApplicationContext{
 		HealthHandler:         healthHandler,
