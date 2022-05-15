@@ -16,7 +16,10 @@ require (
 	github.com/core-go/security v0.1.0
 	github.com/core-go/service v0.2.1
 	github.com/core-go/signup v0.1.1
+	github.com/core-go/sql v0.3.0
+	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/gorilla/mux v1.8.0
+	github.com/lib/pq v1.10.4
 	github.com/rs/cors v1.8.0
 	github.com/sendgrid/rest v2.6.4+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.10.0+incompatible // indirect

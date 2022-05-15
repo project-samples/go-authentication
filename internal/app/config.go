@@ -9,11 +9,13 @@ import (
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis"
 	. "github.com/core-go/signup/mail"
+	"github.com/core-go/sql"
 )
 
-type Root struct {
+type Config struct {
 	Server ServerConfig `mapstructure:"server"`
 	Mongo  MongoConfig  `mapstructure:"mongo"`
+	Sql    sql.Config   `mapstructure:"sql"`
 	Redis  redis.Config `mapstructure:"redis"`
 
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
