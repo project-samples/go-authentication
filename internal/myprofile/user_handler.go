@@ -2,7 +2,6 @@ package myprofile
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/core-go/search"
 	sv "github.com/core-go/service"
 	"io/ioutil"
@@ -102,10 +101,7 @@ func (h *userHandler) SaveMySetting(w http.ResponseWriter, r *http.Request) {
 		sv.HasError(w, r, nil, nil, 0, h.Error, h.Log, h.Resource, h.Action.Update)
 	}
 	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		sv.HasError(w, r, nil, err, 0, h.Error, h.Log, h.Resource, h.Action.Update)
-	}
-	err = json.Unmarshal(body, &settings)
+	err = settings.Scan(body)
 	if err == nil {
 		result1, _ := h.service.Load(r.Context(), id)
 		user = *result1

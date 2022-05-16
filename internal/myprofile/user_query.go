@@ -41,10 +41,20 @@ func BuildQuery(param interface{}) (bson.D, bson.M) {
 		for _, value := range filter.Interests {
 			query = append(query, bson.E{Key: "interests", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", value)}})
 		}
-		//query = append(query, bson.E{Key: "interests", Value: primitive.Regex{Pattern: fmt.Sprintf("\\w*%v\\w*", filter.Interests), Options: "i"}})
 	}
 	if len(filter.FirstName) > 0 {
-		query = append(query, bson.E{Key: "firstName", Value: primitive.Regex{Pattern: fmt.Sprintf("\\w*%v\\w*", filter.FirstName)}})
+		query = append(query, bson.E{Key: "firstName", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", filter.FirstName)}})
 	}
+	//if filter.Skills != nil {
+	//	var skill bson.D
+	//
+	//	for i, value := range filter.Skills {
+	//		t := strconv.Itoa(i)
+	//		skill = append(skill, bson.E{Key: t, Value: bson.D{bson.E{Key: "skill", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", value.Skill)}}, bson.E{Key: "hirable", Value: primitive.Regex{Pattern: fmt.Sprintf("^%t", value.Hirable)}}}})
+	//		i++
+	//	}
+	//	query = append(query, bson.E{Key: "skills", Value: skill})
+	//
+	//}
 	return query, fields
 }
