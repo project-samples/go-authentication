@@ -8,16 +8,16 @@ import (
 	. "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis"
-	sv "github.com/core-go/service"
 	. "github.com/core-go/signup/mail"
+	"github.com/core-go/sql"
 )
 
-type Root struct {
-	Server                ServerConfig `mapstructure:"server"`
-	Mongo                 MongoConfig  `mapstructure:"mongo"`
-	Redis                 redis.Config `mapstructure:"redis"`
-	StatusUser            *sv.StatusConfig
-	Action                *sv.ActionConfig
+type Config struct {
+	Server ServerConfig `mapstructure:"server"`
+	Mongo  MongoConfig  `mapstructure:"mongo"`
+	Sql    sql.Config   `mapstructure:"sql"`
+	Redis  redis.Config `mapstructure:"redis"`
+
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`
 	MaxPasswordAge        int32                         `mapstructure:"max_password_age"`
@@ -33,7 +33,6 @@ type Root struct {
 	OAuth2                OAuth2Config                  `mapstructure:"oauth2"`
 	Mail                  MailConfig                    `mapstructure:"mail"`
 	CallBackURL           CallbackURL                   `mapstructure:"callback_url"`
-	Template              bool                          `mapstructure:"template"`
 }
 
 type ServerConfig struct {

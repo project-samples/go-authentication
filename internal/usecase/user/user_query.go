@@ -1,14 +1,15 @@
-package myprofile
+package user
 
 import (
 	"fmt"
 	"github.com/core-go/mongo"
+	"go-service/internal/usecase/myprofile"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 )
 
-var user User
+var user myprofile.User
 
 func BuildQuery(param interface{}) (bson.D, bson.M) {
 	userType := reflect.TypeOf(user)

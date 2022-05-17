@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	conf := app.Root{}
+	conf := app.Config{}
 	config.Load(&conf, "configs/config")
 
 	r := mux.NewRouter()
