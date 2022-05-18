@@ -3,16 +3,14 @@ package user
 import (
 	"fmt"
 	"github.com/core-go/mongo"
-	"go-service/internal/usecase/myprofile"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 )
 
-var user myprofile.User
+var user User
 
 func BuildQuery(param interface{}) (bson.D, bson.M) {
-	userType := reflect.TypeOf(user)
 	var query = bson.D{}
 	var fields = bson.M{}
 	filter, ok := param.(*UserFilter)
@@ -20,6 +18,7 @@ func BuildQuery(param interface{}) (bson.D, bson.M) {
 		return query, fields
 	}
 	if len(filter.Fields) > 0 {
+		userType := reflect.TypeOf(user)
 		for _, key := range filter.Fields {
 			_, _, columnName := mongo.GetFieldByJson(userType, key)
 			if len(columnName) < 0 {
@@ -43,19 +42,15 @@ func BuildQuery(param interface{}) (bson.D, bson.M) {
 			query = append(query, bson.E{Key: "interests", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", value)}})
 		}
 	}
-	if len(filter.FirstName) > 0 {
-		query = append(query, bson.E{Key: "firstName", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", filter.FirstName)}})
+	if filter.Skills != nil && len(filter.Skills) > 0 {
+		var skill bson.D
+		for _, value := range filter.Skills {
+			if value.Hirable != true {
+				query = append(skill, bson.E{Key: "skills", Value: bson.D{{"skill", value.Skill}}})
+			} else {
+				query = append(skill, bson.E{Key: "skills", Value: bson.D{{"skill", value.Skill}, {"hirable", value.Hirable}}})
+			}
+		}
 	}
-	//if filter.Skills != nil {
-	//	var skill bson.D
-	//
-	//	for i, value := range filter.Skills {
-	//		t := strconv.Itoa(i)
-	//		skill = append(skill, bson.E{Key: t, Value: bson.D{bson.E{Key: "skill", Value: primitive.Regex{Pattern: fmt.Sprintf("^%v", value.Skill)}}, bson.E{Key: "hirable", Value: primitive.Regex{Pattern: fmt.Sprintf("^%t", value.Hirable)}}}})
-	//		i++
-	//	}
-	//	query = append(query, bson.E{Key: "skills", Value: skill})
-	//
-	//}
 	return query, fields
 }
