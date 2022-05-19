@@ -15,7 +15,7 @@ import (
 
 func main() {
 	conf := app.Config{}
-	config.Load(&conf, "configs/config")
+	config.Load(&conf, "src/GoCinema/configs/config")
 
 	r := mux.NewRouter()
 	er2 := app.Route(r, context.Background(), conf)

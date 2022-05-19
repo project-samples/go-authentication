@@ -2,6 +2,13 @@ package app
 
 import (
 	"context"
+	"github.com/core-go/storage"
+	drop_box "github.com/core-go/storage/dropbox"
+	"github.com/core-go/storage/google"
+	google_drive "github.com/core-go/storage/google-drive"
+	one_drive "github.com/core-go/storage/one-drive"
+	"github.com/core-go/storage/s3"
+	"go-service/internal/usecase/upload"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -38,17 +45,18 @@ import (
 )
 
 type ApplicationContext struct {
-	Health         *Handler
-	Authentication *AuthenticationHandler
-	SignOut        *SignOutHandler
-	Password       *PasswordHandler
-	SignUp         *SignUpHandler
-	OAuth2         *OAuth2Handler
-	User           usr.UserHandler
-	MyProfile      myprofile.MyProfileHandler
-	Skill          *QueryHandler
-	Interest       *QueryHandler
-	LookingFor     *QueryHandler
+	Health            *Handler
+	Authentication    *AuthenticationHandler
+	SignOut           *SignOutHandler
+	Password          *PasswordHandler
+	SignUp            *SignUpHandler
+	OAuth2            *OAuth2Handler
+	User              usr.UserHandler
+	MyProfile         myprofile.MyProfileHandler
+	Skill             *QueryHandler
+	Interest          *QueryHandler
+	LookingFor        *QueryHandler
+	UploadFileHandler upload.UploadHandler
 }
 
 func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
@@ -150,24 +158,43 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	myProfileService := myprofile.NewUserService(userRepository)
 	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, skillService.Save, interestService.Save, lookingForService.Save)
 
+	cloudService, err := CreateCloudService(ctx, conf)
+	if err != nil {
+		return nil, err
+	}
+	uploadFileHandler := upload.NewUploadHandler(cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory)
+
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
 	app := ApplicationContext{
-		Health:         healthHandler,
-		Authentication: authenticationHandler,
-		SignOut:        signOutHandler,
-		Password:       passwordHandler,
-		SignUp:         signupHandler,
-		OAuth2:         oauth2Handler,
-		User:           userHandler,
-		MyProfile:      myProfileHandler,
-		Skill:          skillHandler,
-		Interest:       interestHandler,
-		LookingFor:     lookingForHandler,
+		Health:            healthHandler,
+		Authentication:    authenticationHandler,
+		SignOut:           signOutHandler,
+		Password:          passwordHandler,
+		SignUp:            signupHandler,
+		OAuth2:            oauth2Handler,
+		User:              userHandler,
+		MyProfile:         myProfileHandler,
+		Skill:             skillHandler,
+		Interest:          interestHandler,
+		LookingFor:        lookingForHandler,
+		UploadFileHandler: uploadFileHandler,
 	}
 	return &app, nil
 }
-
+func CreateCloudService(ctx context.Context, config Config) (storage.StorageService, error) {
+	if config.Provider == "google-drive" {
+		return google_drive.NewGoogleDriveService([]byte(config.GoogleDriveCredentials), false)
+	} else if config.Provider == "drop-box" {
+		return drop_box.NewDropboxService(config.DropboxToken)
+	} else if config.Provider == "one-drive" {
+		return one_drive.NewOneDriveService(ctx, config.OneDriveToken, false)
+	} else if config.Provider == "google-storage" {
+		return google.NewGoogleStorageServiceWithCredentials(ctx, []byte(config.GoogleCredentials), config.Storage)
+	} else {
+		return s3.NewS3ServiceWithConfig(config.AWS, config.Storage)
+	}
+}
 func NewMailService(mailConfig MailConfig) SimpleMailSender {
 	if mailConfig.Provider == "sendgrid" {
 		return NewSimpleMailSender(NewSendGridMailSender(mailConfig.APIkey))

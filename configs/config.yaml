@@ -169,3 +169,54 @@ password:
       body: |
         Your user name is '%s'. This is the passcode to reset your password: %s. This passcode will expire in %s minutes.
         Tên đăng nhập của bạn là '%s'. Hãy dùng mã sau để thay đổi mật khẩu: %s. Mã này sẽ hết hạn trong %s phút.
+
+key_file: file
+
+provider: drop-box
+#google-storage, google-drive, drop-box, one-drive
+
+google_storage:
+  bucket: go-firestore-rest-api.appspot.com
+  directory: sub
+  public: true
+
+general_directory: golang-cloud-service
+dropbox_token: YbLJvCV-q44AAAAAAAAAAX2AKU1zIzSiD7K3-B1vRqhOQsG4Egx1inM3nw6AguD5
+# read README.md to know how to get drop_box token
+one_drive_token: EwBwA8l6BAAUwihrrCrmQ4wuIJX5mbj7rQla6TUAAUBLNvqhOX3NYkhkDkRbX2rurSVeN7OXgVMm1p/2Y7fCF164Hid8gjUw8Qyt%2bAafQ9KMVtOiKiDmYTHi7wJLFnRVfVXTlMX6TPVEpaEnxBkbfb3hJtRTQ2t3tQqxwqtZcNYfkCJa/WNth5bUsXVZ%2bnyR6Goyn3CKmDxJ7Vm%2bzZIxo5dlhoSdiX2gzgjoef13/SiPu0i9s5CrAuQrM4EvnY%2bvYWzOGF0fYpxuzOWSobs7S7C8fCotmTLRSYrByuchzXat8WvU2L0oBBAvGDkJKsHeime29qJd5Et3LZ9gbN0K1PJq3ST6y%2bhiyoSfR0xS271U/CCLKICVkxzeNPMqFpkDZgAACHQnj1wd3ERZQAICBP/VXNmsWrPzt7/602NScrHnU9RQtdvJZtZWaDU1k3c49whDh28YBckg36YQ3aXrjZQVsRV80Yb3L8uW8T0682sYd/mO8BaPZZ4u6x%2b2EtIq/z8ximg3I9KnvA51Z1Ptdr3CoIs2AxACmWlWI/pjeSw4TXLlUMvnxrSKaTzO2Rjtb9lNtIYsGeVT72vTg9SvwT2Pk1vqc6duAjLyQTRIc2AuquaVsSzeG12dQ0hv86spMbD/6NnF7/mVCYKkDwkALoIc/Hd7FbvYVm8LBvsLyjikw/U3heEFCEpX7jf353eummp49mUQoAgiIAN94kUfTE6y9ptv47nzLB96wOBXwBlquWyxZlPiLJkeNzdBn04cG52Ndmaoq/R9XQNubet4UD7fys/cQTwjJ3ER29hwMepdIWuYZx1ZLY0tQF6p9p0ScnpwasBizO9XnlmkPAH8Pf67gxw0Dp%2bdcXSHJOjppx4j%2bxLqKTXK0DBtAkIe4sh6I8VIUM44TNHx96YnkNfEi4XV9FBbKGa0Dkcyr5ruriDUsD6IVONYHYd5ACpLevfYUbobKCyXItJTFNTQ2iITNHKnCx/qvX5qwwZwA/izjjUO7TsFpa7A4oUWXOWc1x815FV%2b5i8n/6Fs7tDQi%2bbWBi6%2bx2EbtPybm3TrUI1Zxs%2bI/DqCAeowCcUyXo4whj7BMwL9sd7IhYjQpxVeKogwDQ51NE5wH1JN0HNPn70D41hyNjpXs6NmyU1FGeZzj/3z8oD8WANh66pWQdoucH%2bFAg%3d%3d
+# read README.md to know how to get one drive access token
+
+google_credentials: '
+  {
+    "type": "service_account",
+    "project_id": "crypto-airlock-335904",
+    "private_key_id": "fd64e528691d731eac8d1a71add6e0333357c46a",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDuHvh3e/iGPFw+\nEmoBBcHxzQ8Dx7xfeoHrvYogeh1seJ91ZLBPA3+9XRobEJ9LSeVrTQqhsyLfjeQn\nmeJN/fO6Qp8GrG8c1ZiyeY4uusRN5DSRIzubFPXp2FkJjTL0WbzJfqriu9C4JyCn\nAn/LvZiD5/shgw+gbpdlsq5d9xn0EkqMWqGem7i2ujeYOcf8FGM9I65vfXe0v9p7\nGAq6xLkUnTl3pwb9iLzrTW8vqXWAAwGvzV5mkUwqh9Y8dccEEe4C26PlQm/TBhqa\na1a4JdioJiN2mkxw6Y4I8NVOIKliAra997TpywqRnXN+Jn05uO+Kf7MUoZ5q6Jad\nisAu8s9bAgMBAAECggEAJQVpUZZTdiH7S2aXLC/beT8NjGO+N0VM3rxvYGDr+ISB\nHNd54TGk52mKrgDga0GtarMl1IG33x7ohSRT1Bayu9eGHEZXLhn4AsOK+1vr5O+h\nIUbjilcba+8dhLJ7D2obmQ4u/k+qAdTfgD0PZmXvSOQac27fe+zFxWN0NZq94mgK\nzobzfgCT01UY8JHvCmuBmFuoHPwrvxtv/PKzGasbKNW3cu5hJTFD2xRpYe/gBtg7\nCbmzEoDXUMn9c7SM7s1/NcUY0WKTCqgM0YipxqAdZS2chnM3PAXsWXb3n9B0FnT7\na7/ETZ7ybt9rz46aCVS38SSLl//cEK+b9Tl8Rqe6PQKBgQD96etyXZzUxlEDsYqp\nRn6eigcAsVe4GQXk5J5g/WJJgZ5eXQGraGgLbKsnZf2f8SukK0DicnwXBqfjWveM\nm174j5bfhph8/ZiKHyOes6umDCbJN5BJ6Ge6ZPYKrgO4xW+w0eQGC1ln+ZXxiG9s\nfsUgRaue0QfNnx8hJx/akYssVQKBgQDwE9UcZQ96HsbAgvitnTI1ArWOEtxjB36J\ndlTyPH5iDv9eNJMj8Sha7EaSaov244ar/NGspO34tBqeB5yFWwQnOEbENx22a3Dz\n4ZjMAV1XZ9FDtTP3vYdmNEnBm2IqR4APrFKG7orkeseJFmEi7j8Y7xDFNlHE0q3m\n2sisyZ687wKBgQDgRmDoGJWxPyZJ6+T9Vb37jRFYZEyF2Nxi7CiUpNrO8IWQ9ffG\njibwiGC5IRYf0yboECh0nAjNUdyzLiNf99CwHix2bW19YYX94jlVMYAY37zWmJSD\nI5uTgR/uGPxClWntNceCKz4iX8s4l3lLzMGTmtZXJm0NC1K0ttkk9s+GLQKBgHTh\nEuWKBejsRtK+cJcFasYIFZ+faxADPAVsSJrN/LF8n7KbYe8jnwP0976chJuj1ZKx\nuNqWSQzFkhfRmNALqY/2g+1O7/Y5hHoXIK5hE7JT5rtR4oUADoUhe674GOiAesYm\nnN74D0KAy9ffv1akKq/W45E/iruJ3gQAC6ajWdadAoGAbelcfMUes++cglpLn1/M\ngxRdR5bootb6hA3DoEJ9ESptVcydMweSnJNqKLS2gJdYilOLH8i4GCic2ArKEEPa\nnrN60T1/Miy0mO0dF43V6OKo29UMkE8ZeA4sSfCo4oP5Oo1yzkAWDBx68WvhgJPA\nG9Vrvf+AqbHdbDU4XlB2amY=\n-----END PRIVATE KEY-----\n",
+    "client_email": "go-storage-upload@crypto-airlock-335904.iam.gserviceaccount.com",
+    "client_id": "110819004498077867505",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/go-storage-upload%40crypto-airlock-335904.iam.gserviceaccount.com"
+  }'
+
+google_drive_credentials: '
+{
+    "installed": {
+        "client_id": "708448127214-70aqnb9hp5l2u1rgmh7plljpp6isb5mg.apps.googleusercontent.com",
+        "project_id": "golang-upload-http",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_secret": "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",
+        "redirect_uris": [
+            "urn:ietf:wg:oauth:2.0:oob",
+            "http://localhost"
+        ]
+    }
+}'
+
+aws:
+  region: abc
+  access_key_id: abc
+  secret_access_key: abc

@@ -13,8 +13,8 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	}
 	r.HandleFunc("/health", app.Health.Check).Methods(GET)
 
-	r.HandleFunc("/authentication", app.Authentication.Authenticate).Methods(POST)
-	r.HandleFunc("/authentication/signout/{username}", app.SignOut.SignOut).Methods(GET)
+	r.HandleFunc("/authenticate", app.Authentication.Authenticate).Methods(POST)
+	r.HandleFunc("/authenticate/signout/{username}", app.SignOut.SignOut).Methods(GET)
 
 	r.HandleFunc("/password/change", app.Password.ChangePassword).Methods(POST)
 	r.HandleFunc("/password/forgot", app.Password.ForgotPassword).Methods(POST)
@@ -39,5 +39,7 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.SaveMyProfile).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.GetMySettings).Methods(GET)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.SaveMySettings).Methods(PATCH)
+
+	r.HandleFunc("/users/upload", app.UploadFileHandler.UploadFile).Methods(POST)
 	return err
 }
