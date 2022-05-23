@@ -15,9 +15,9 @@ require (
 require (
 	github.com/core-go/auth v0.1.2
 	github.com/core-go/health v0.4.7
-	github.com/core-go/log v0.0.8
 	github.com/core-go/mail v0.0.0
 	github.com/core-go/mongo v0.3.1
+	github.com/core-go/mq v0.6.2
 	github.com/core-go/oauth2 v0.1.1
 	github.com/core-go/password v0.1.0
 	github.com/core-go/redis v0.0.1

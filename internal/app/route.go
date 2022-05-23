@@ -39,7 +39,10 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.SaveMyProfile).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.GetMySettings).Methods(GET)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.SaveMySettings).Methods(PATCH)
+	r.HandleFunc("/my-profile/{id}/upload", app.MyProfile.UploadImage).Methods(POST)
+	r.HandleFunc("/my-profile/delete/{id}", app.MyProfile.DeleteFile).Methods(DELETE)
 
-	r.HandleFunc("/users/upload", app.UploadFileHandler.UploadFile).Methods(POST)
+	//r.HandleFunc("/my-profile/image/{id}", app.MyProfile.GetAvt).Methods(GET)
+
 	return err
 }

@@ -10,6 +10,7 @@ type UserService interface {
 	SaveMyProfile(ctx context.Context, user map[string]interface{}) (int64, error)
 	GetMySettings(ctx context.Context, id string) (*Settings, error)
 	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
+	insertImage(ctx context.Context, id string, image string) (int64, error)
 }
 
 func NewUserService(repository sv.Repository) UserService {
@@ -46,5 +47,11 @@ func (s *userService) SaveMySettings(ctx context.Context, id string, settings *S
 	user := make(map[string]interface{})
 	user["userId"] = id
 	user["settings"] = settings
+	return s.repository.Patch(ctx, user)
+}
+func (s *userService) insertImage(ctx context.Context, id string, image string) (int64, error) {
+	user := make(map[string]interface{})
+	user["userId"] = id
+	user["imageURL"] = image
 	return s.repository.Patch(ctx, user)
 }

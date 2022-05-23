@@ -1,12 +1,18 @@
 package myprofile
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	sv "github.com/core-go/service"
 	v "github.com/core-go/service/v10"
+	"github.com/core-go/storage"
+	"io"
 	"net/http"
+	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 type MyProfileHandler interface {
@@ -14,18 +20,23 @@ type MyProfileHandler interface {
 	SaveMyProfile(w http.ResponseWriter, r *http.Request)
 	GetMySettings(w http.ResponseWriter, r *http.Request)
 	SaveMySettings(w http.ResponseWriter, r *http.Request)
+	UploadImage(w http.ResponseWriter, r *http.Request)
+	DeleteFile(w http.ResponseWriter, r *http.Request)
 }
 
+const contentTypeHeader = "Content-Type"
+
 func NewMyProfileHandler(service UserService, logError func(context.Context, string), status *sv.StatusConfig,
-		saveSkills func(ctx context.Context, values []string) (int64, error),
-		saveInterests func(ctx context.Context, values []string) (int64, error),
-		saveLookingFor func(ctx context.Context, values []string) (int64, error)) MyProfileHandler {
+	serviceStorage storage.StorageService, provider string, generalDirectory string, keyFile string, directory string,
+	saveSkills func(ctx context.Context, values []string) (int64, error),
+	saveInterests func(ctx context.Context, values []string) (int64, error),
+	saveLookingFor func(ctx context.Context, values []string) (int64, error)) MyProfileHandler {
 	var user User
 	userType := reflect.TypeOf(user)
 	keys, indexes, _ := sv.BuildMapField(userType)
 	validator := v.NewValidator()
 	s := sv.InitializeStatus(status)
-	return &myProfileHandler{service: service, Validate: validator.Validate, LogError: logError, Keys: keys, Indexes: indexes, Status: s, SaveSkills: saveSkills, SaveInterests: saveInterests, SaveLookingFor: saveLookingFor}
+	return &myProfileHandler{service: service, Validate: validator.Validate, LogError: logError, Keys: keys, Indexes: indexes, Status: s, ServiceStorage: serviceStorage, Provider: provider, GeneralDirectory: generalDirectory, KeyFile: keyFile, Directory: directory, SaveSkills: saveSkills, SaveInterests: saveInterests, SaveLookingFor: saveLookingFor}
 }
 
 type myProfileHandler struct {
@@ -38,6 +49,12 @@ type myProfileHandler struct {
 	SaveSkills     func(ctx context.Context, values []string) (int64, error)
 	SaveInterests  func(ctx context.Context, values []string) (int64, error)
 	SaveLookingFor func(ctx context.Context, values []string) (int64, error)
+
+	ServiceStorage   storage.StorageService
+	Provider         string
+	GeneralDirectory string
+	Directory        string
+	KeyFile          string
 }
 
 func (h *myProfileHandler) GetMyProfile(w http.ResponseWriter, r *http.Request) {
@@ -90,4 +107,102 @@ func (h *myProfileHandler) SaveMySettings(w http.ResponseWriter, r *http.Request
 		res, err := h.service.SaveMySettings(r.Context(), id, &settings)
 		sv.RespondModel(w, r, res, err, h.LogError, nil)
 	}
+}
+
+func (u *myProfileHandler) UploadImage(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		http.Error(w, "not avalable", http.StatusInternalServerError)
+		return
+	}
+
+	file, handler, err0 := r.FormFile(u.KeyFile)
+	if err0 != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	bufferFile := bytes.NewBuffer(nil)
+	_, err1 := io.Copy(bufferFile, file)
+	if err1 != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+
+	defer file.Close()
+
+	bytes := bufferFile.Bytes()
+	contentType := handler.Header.Get(contentTypeHeader)
+	if len(contentType) == 0 {
+		contentType = getExt(handler.Filename)
+	}
+
+	var directory string
+	if u.Provider == "google-storage" {
+		directory = u.Directory
+	} else {
+		directory = u.GeneralDirectory
+	}
+
+	rs, err2 := u.ServiceStorage.Upload(r.Context(), directory, handler.Filename, bytes, contentType)
+	if err2 != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	res, _ := json.Marshal(rs)
+
+	id := sv.GetRequiredParam(w, r, 1)
+	if len(id) > 0 {
+		result, err4 := u.service.insertImage(r.Context(), id, string(res))
+		if err4 != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		sv.HandleResult(w, r, rs, result, err4, u.Status, u.LogError, nil)
+		//respond(w, http.StatusOK, res)
+	}
+
+}
+
+func (u *myProfileHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	i := strings.LastIndex(r.RequestURI, "/")
+	filename := ""
+	if i <= 0 {
+		http.Error(w, "require id", http.StatusBadRequest)
+		return
+	}
+	filename = r.RequestURI[i+1:]
+
+	var filepath string
+	if u.Provider == "drop-box" {
+		filepath = fmt.Sprintf("/%s/%s", u.GeneralDirectory, filename)
+	} else {
+		filepath = filename
+	}
+
+	rs, err := u.ServiceStorage.Delete(r.Context(), filepath)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	var msg string
+	if rs {
+		msg = fmt.Sprintf("file '%s' has been deleted successfully!!!", filename)
+	} else {
+		msg = fmt.Sprintf("delete file '%s' failed!!!", filename)
+	}
+	respond(w, http.StatusOK, msg)
+}
+
+func respond(w http.ResponseWriter, code int, result interface{}) {
+	res, _ := json.Marshal(result)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(res)
+}
+func getExt(file string) string {
+	ext := filepath.Ext(file)
+	if strings.HasPrefix(ext, ":") {
+		ext = ext[1:]
+		return ext
+	}
+	return ext
 }

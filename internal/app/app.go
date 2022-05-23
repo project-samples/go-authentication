@@ -8,7 +8,6 @@ import (
 	google_drive "github.com/core-go/storage/google-drive"
 	one_drive "github.com/core-go/storage/one-drive"
 	"github.com/core-go/storage/s3"
-	"go-service/internal/usecase/upload"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -17,11 +16,12 @@ import (
 	. "github.com/core-go/auth"
 	am "github.com/core-go/auth/mongo"
 	. "github.com/core-go/health"
-	"github.com/core-go/log"
+	//"github.com/core-go/log"
 	. "github.com/core-go/mail"
 	. "github.com/core-go/mail/sendgrid"
 	. "github.com/core-go/mail/smtp"
 	mgo "github.com/core-go/mongo"
+	"github.com/core-go/mq/log"
 	. "github.com/core-go/oauth2"
 	om "github.com/core-go/oauth2/mongo"
 	. "github.com/core-go/password"
@@ -37,31 +37,30 @@ import (
 	sm "github.com/core-go/signup/mongo"
 	q "github.com/core-go/sql"
 	_ "github.com/lib/pq"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"go-service/internal/usecase/myprofile"
 	usr "go-service/internal/usecase/user"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ApplicationContext struct {
-	Health            *Handler
-	Authentication    *AuthenticationHandler
-	SignOut           *SignOutHandler
-	Password          *PasswordHandler
-	SignUp            *SignUpHandler
-	OAuth2            *OAuth2Handler
-	User              usr.UserHandler
-	MyProfile         myprofile.MyProfileHandler
-	Skill             *QueryHandler
-	Interest          *QueryHandler
-	LookingFor        *QueryHandler
-	UploadFileHandler upload.UploadHandler
+	Health         *Handler
+	Authentication *AuthenticationHandler
+	SignOut        *SignOutHandler
+	Password       *PasswordHandler
+	SignUp         *SignUpHandler
+	OAuth2         *OAuth2Handler
+	User           usr.UserHandler
+	MyProfile      myprofile.MyProfileHandler
+	Skill          *QueryHandler
+	Interest       *QueryHandler
+	LookingFor     *QueryHandler
 }
 
 func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conf.Mongo.Uri))
 	if err != nil {
+		log.Error(ctx, "Cannot connect to MongoDB: Error: "+err.Error())
 		return nil, err
 	}
 	mongoDb := client.Database(conf.Mongo.Database)
@@ -156,29 +155,27 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	myprofileType := reflect.TypeOf(myprofile.User{})
 	userRepository := mgo.NewRepository(mongoDb, "user", myprofileType)
 	myProfileService := myprofile.NewUserService(userRepository)
-	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, skillService.Save, interestService.Save, lookingForService.Save)
 
 	cloudService, err := CreateCloudService(ctx, conf)
 	if err != nil {
 		return nil, err
 	}
-	uploadFileHandler := upload.NewUploadHandler(cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory)
+	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory, skillService.Save, interestService.Save, lookingForService.Save)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
 	app := ApplicationContext{
-		Health:            healthHandler,
-		Authentication:    authenticationHandler,
-		SignOut:           signOutHandler,
-		Password:          passwordHandler,
-		SignUp:            signupHandler,
-		OAuth2:            oauth2Handler,
-		User:              userHandler,
-		MyProfile:         myProfileHandler,
-		Skill:             skillHandler,
-		Interest:          interestHandler,
-		LookingFor:        lookingForHandler,
-		UploadFileHandler: uploadFileHandler,
+		Health:         healthHandler,
+		Authentication: authenticationHandler,
+		SignOut:        signOutHandler,
+		Password:       passwordHandler,
+		SignUp:         signupHandler,
+		OAuth2:         oauth2Handler,
+		User:           userHandler,
+		MyProfile:      myProfileHandler,
+		Skill:          skillHandler,
+		Interest:       interestHandler,
+		LookingFor:     lookingForHandler,
 	}
 	return &app, nil
 }

@@ -170,7 +170,7 @@ password:
         Your user name is '%s'. This is the passcode to reset your password: %s. This passcode will expire in %s minutes.
         Tên đăng nhập của bạn là '%s'. Hãy dùng mã sau để thay đổi mật khẩu: %s. Mã này sẽ hết hạn trong %s phút.
 
-key_file: file
+key_file: files
 
 provider: drop-box
 #google-storage, google-drive, drop-box, one-drive
