@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"github.com/core-go/mongo/geo"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 	pm "github.com/core-go/password/mongo"
 	"github.com/core-go/redis"
 	"github.com/core-go/search"
+	"github.com/core-go/search/mongo"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	sv "github.com/core-go/service"
@@ -33,8 +35,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"go-service/internal/usecase/location"
 	"go-service/internal/usecase/myprofile"
-	usr "go-service/internal/usecase/user"
+	"go-service/internal/usecase/rate"
+	"go-service/internal/usecase/user"
 )
 
 type ApplicationContext struct {
@@ -44,11 +48,13 @@ type ApplicationContext struct {
 	Password       *PasswordHandler
 	SignUp         *SignUpHandler
 	OAuth2         *OAuth2Handler
-	User           usr.UserHandler
+	User           user.UserHandler
 	MyProfile      myprofile.MyProfileHandler
 	Skill          *QueryHandler
 	Interest       *QueryHandler
 	LookingFor     *QueryHandler
+	Location       location.LocationHandler
+	LocationRate   rate.RateHandler
 }
 
 func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
@@ -61,12 +67,15 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	locationDb, err := mgo.Setup(ctx, conf.Location)
+	if err != nil {
+		return nil, err
+	}
 	logError := log.ErrorMsg
 
 	generateId := shortid.Generate
 
-	user := "user"
+	userCollection := "user"
 	authentication := "authentication"
 
 	redisService, err := redis.NewRedisServiceByConfig(conf.Redis)
@@ -77,7 +86,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 
 	mailService := NewMailService(conf.Mail)
 
-	authenticationRepository := am.NewAuthenticationRepositoryByConfig(mongoDb, user, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
+	authenticationRepository := am.NewAuthenticationRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
 	userInfoService := NewUserInfoService(authenticationRepository, conf.MaxPasswordAge, conf.MaxPasswordFailed, conf.LockedMinutes)
 	bcryptComparator := &BCryptStringComparator{}
 	tokenService := NewTokenService()
@@ -89,7 +98,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	signOutHandler := NewSignOutHandler(tokenService.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
-	passwordRepository := pm.NewPasswordRepositoryByConfig(mongoDb, user, authentication, user, "userId", conf.Password.Schema)
+	passwordRepository := pm.NewPasswordRepositoryByConfig(mongoDb, userCollection, authentication, userCollection, "userId", conf.Password.Schema)
 	passResetCodeRepository := mgo.NewPasscodeRepository(mongoDb, passwordResetCode)
 	p := conf.Password
 	exps := []string{p.Exp1, p.Exp2, p.Exp3, p.Exp4, p.Exp5, p.Exp6}
@@ -100,7 +109,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	passwordHandler := NewPasswordHandler(passwordService, logError, nil)
 
 	signUpCode := "signupCode"
-	signUpRepository := sm.NewSignUpRepositoryByConfig(mongoDb, user, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
+	signUpRepository := sm.NewSignUpRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
 	signUpCodeRepository := mgo.NewPasscodeRepository(mongoDb, signUpCode)
 	signupStatus := InitSignUpStatus(conf.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
@@ -122,7 +131,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	services := strings.Split(conf.OAuth2.Services, ",")
 	userRepositories := make(map[string]UserRepository)
 	for _, source := range sources {
-		userRepository := om.NewUserRepositoryByConfig(mongoDb, user, source, activatedStatus, services, schema, &conf.UserStatus)
+		userRepository := om.NewUserRepositoryByConfig(mongoDb, userCollection, source, activatedStatus, services, schema, &conf.UserStatus)
 		userRepositories[source] = userRepository
 	}
 	configurationRepository := om.NewConfigurationRepository(mongoDb, integrationConfiguration, oauth2UserRepositories, "status", "A")
@@ -133,10 +142,10 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
 
-	userType := reflect.TypeOf(usr.User{})
-	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", usr.BuildQuery, search.GetSort)
+	userType := reflect.TypeOf(user.User{})
+	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", user.BuildQuery, search.GetSort)
 	getUser := mgo.UseGet(mongoDb, "user", userType)
-	userHandler := usr.NewUserHandler(userSearchBuilder.Search, getUser, logError, nil)
+	userHandler := user.NewUserHandler(userSearchBuilder.Search, getUser, logError, nil)
 
 	skillService := q.NewStringService(db, "skills", "skill")
 	skillHandler := NewQueryHandler(skillService.Load, logError)
@@ -149,6 +158,22 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	userRepository := mgo.NewRepository(mongoDb, "user", myprofileType)
 	myProfileService := myprofile.NewUserService(userRepository)
 	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, skillService.Save, interestService.Save, lookingForService.Save)
+
+	locationType := reflect.TypeOf(location.Location{})
+	locationInfoType := reflect.TypeOf(location.LocationInfo{})
+	locationMapper := geo.NewMapper(locationType)
+	locationQuery := query.UseQuery(locationType)
+	locationSearchBuilder := mgo.NewSearchBuilder(locationDb, "location", locationQuery, search.GetSort, locationMapper.DbToModel)
+	locationRepository := mgo.NewViewRepository(locationDb, "location", locationType, locationMapper.DbToModel)
+	locationInfoRepository := mgo.NewViewRepository(locationDb, "locationInfo", locationInfoType)
+	locationService := location.NewLocationService(locationRepository, locationInfoRepository)
+	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, logError, nil)
+
+	locationRateType := reflect.TypeOf(rate.Rate{})
+	locationRateQuery := query.UseQuery(locationRateType)
+	locationRateSearchBuilder := mgo.NewSearchBuilder(locationDb, "locationRate", locationRateQuery, search.GetSort)
+	getLocationRate := mgo.UseGet(locationDb, "locationRate", locationRateType)
+	locationRateHandler := rate.NewRateHandler(locationRateSearchBuilder.Search, getLocationRate, logError, nil)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
@@ -164,6 +189,8 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		Skill:          skillHandler,
 		Interest:       interestHandler,
 		LookingFor:     lookingForHandler,
+		Location:       locationHandler,
+		LocationRate:   locationRateHandler,
 	}
 	return &app, nil
 }

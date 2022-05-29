@@ -16,7 +16,7 @@ require (
 	github.com/core-go/security v0.1.0
 	github.com/core-go/service v0.2.1
 	github.com/core-go/signup v0.1.1
-	github.com/core-go/sql v0.3.0
+	github.com/core-go/sql v0.3.1
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.10.4
@@ -26,5 +26,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125 // indirect
 	go.mongodb.org/mongo-driver v1.7.2
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 )

@@ -39,5 +39,14 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.SaveMyProfile).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.GetMySettings).Methods(GET)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.SaveMySettings).Methods(PATCH)
+
+	location := "/locations"
+	r.HandleFunc(location, app.Location.Search).Methods(GET)
+	r.HandleFunc(location+"/search", app.Location.Search).Methods(GET, POST)
+	r.HandleFunc(location+"/{id}", app.Location.Load).Methods(GET)
+
+	locationRate := "/locationsrate"
+	r.HandleFunc(locationRate+"/search", app.LocationRate.Search).Methods(GET, POST)
+	r.HandleFunc(locationRate+"/{id}", app.LocationRate.Load).Methods(GET)
 	return err
 }
