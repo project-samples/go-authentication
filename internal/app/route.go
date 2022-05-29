@@ -48,5 +48,14 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	locationRate := "/locationsrate"
 	r.HandleFunc(locationRate+"/search", app.LocationRate.Search).Methods(GET, POST)
 	r.HandleFunc(locationRate+"/{id}", app.LocationRate.Load).Methods(GET)
+
+	myarticle := "/my-articles"
+	// r.HandleFunc(eventPath, event.GetAll).Methods(GET)
+	r.HandleFunc(myarticle+"/search", app.MyArticles.Search).Methods(GET, POST)
+	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Load).Methods(GET)
+	r.HandleFunc(myarticle, app.MyArticles.Create).Methods(POST)
+	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Update).Methods(PUT)
+	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Patch).Methods(PATCH)
+	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Delete).Methods(DELETE)
 	return err
 }

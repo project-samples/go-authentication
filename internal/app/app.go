@@ -27,6 +27,7 @@ import (
 	. "github.com/core-go/security/jwt"
 	sv "github.com/core-go/service"
 	"github.com/core-go/service/shortid"
+	v "github.com/core-go/service/v10"
 	. "github.com/core-go/signup"
 	. "github.com/core-go/signup/mail"
 	sm "github.com/core-go/signup/mongo"
@@ -36,6 +37,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go-service/internal/usecase/location"
+	"go-service/internal/usecase/myarticles"
 	"go-service/internal/usecase/myprofile"
 	"go-service/internal/usecase/rate"
 	"go-service/internal/usecase/user"
@@ -55,6 +57,7 @@ type ApplicationContext struct {
 	LookingFor     *QueryHandler
 	Location       location.LocationHandler
 	LocationRate   rate.RateHandler
+	MyArticles     myarticles.ArticleHandler
 }
 
 func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
@@ -72,7 +75,9 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		return nil, err
 	}
 	logError := log.ErrorMsg
-
+	modelStatus := sv.InitializeStatus(conf.ModelStatus)
+	action := sv.InitializeAction(conf.Action)
+	validator := v.NewValidator()
 	generateId := shortid.Generate
 
 	userCollection := "user"
@@ -175,6 +180,13 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	getLocationRate := mgo.UseGet(locationDb, "locationRate", locationRateType)
 	locationRateHandler := rate.NewRateHandler(locationRateSearchBuilder.Search, getLocationRate, logError, nil)
 
+	myarticlesType := reflect.TypeOf(myarticles.Article{})
+	myarticlesQuery := query.UseQuery(myarticlesType)
+	myarticlesSearchBuilder := mgo.NewSearchBuilder(locationDb, "article", myarticlesQuery, search.GetSort)
+	myarticlesRepository := mgo.NewRepository(locationDb, "article", myarticlesType)
+	myarticlesService := myarticles.NewArticleService(myarticlesRepository)
+	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, modelStatus, logError, validator.Validate, conf.Tracking, &action, nil)
+
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
 	app := ApplicationContext{
@@ -191,6 +203,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		LookingFor:     lookingForHandler,
 		Location:       locationHandler,
 		LocationRate:   locationRateHandler,
+		MyArticles:     myarticlesHandler,
 	}
 	return &app, nil
 }

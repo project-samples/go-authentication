@@ -9,6 +9,8 @@ import (
 	. "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis"
+	sv "github.com/core-go/service"
+	"github.com/core-go/service/builder"
 	. "github.com/core-go/signup/mail"
 	"github.com/core-go/sql"
 )
@@ -35,6 +37,10 @@ type Config struct {
 	OAuth2                OAuth2Config                  `mapstructure:"oauth2"`
 	Mail                  MailConfig                    `mapstructure:"mail"`
 	CallBackURL           CallbackURL                   `mapstructure:"callback_url"`
+
+	Tracking   builder.TrackingConfig `mapstructure:"action"`
+	ModelStatus     *sv.StatusConfig       `mapstructure:"model_status"`
+	Action     *sv.ActionConfig       `mapstructure:"action"`
 }
 
 type ServerConfig struct {
