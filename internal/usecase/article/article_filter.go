@@ -1,4 +1,4 @@
-package myarticles
+package article
 
 import (
 	"github.com/core-go/search"

@@ -1,12 +1,8 @@
-package myarticles
+package article
 
-import (
-	"github.com/core-go/search"
-	"time"
-)
+import "time"
 
-type ArticleFilter struct {
-	*search.Filter
+type Article struct {
 	Id          string     `json:"id" gorm:"primary_key;column:id" bson:"_id" dynamodbav:"id,omitempty" firestore:"-"`
 	Title       string     `json:"title,omitempty" gorm:"column:title" bson:"title,omitempty" dynamodbav:"title,omitempty" firestore:"title,omitempty"`
 	Description string     `json:"description,omitempty" gorm:"column:description" bson:"description" dynamodbav:"description,omitempty" firestore:"description,omitempty"`

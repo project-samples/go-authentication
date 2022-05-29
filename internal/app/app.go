@@ -36,6 +36,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"go-service/internal/usecase/article"
 	"go-service/internal/usecase/location"
 	"go-service/internal/usecase/myarticles"
 	"go-service/internal/usecase/myprofile"
@@ -58,6 +59,7 @@ type ApplicationContext struct {
 	Location       location.LocationHandler
 	LocationRate   rate.RateHandler
 	MyArticles     myarticles.ArticleHandler
+	Article        article.ArticleHandler
 }
 
 func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
@@ -187,6 +189,13 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	myarticlesService := myarticles.NewArticleService(myarticlesRepository)
 	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, modelStatus, logError, validator.Validate, conf.Tracking, &action, nil)
 
+	articleType := reflect.TypeOf(article.Article{})
+	articleQuery := query.UseQuery(articleType)
+	articleSearchBuilder := mgo.NewSearchBuilder(locationDb, "article", articleQuery, search.GetSort)
+	articleRepository := mgo.NewRepository(locationDb, "article", articleType)
+	articleService := article.NewArticleService(articleRepository)
+	articleHandler := article.NewArticleHandler(articleSearchBuilder.Search, articleService, logError, nil)
+
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
 	app := ApplicationContext{
@@ -204,6 +213,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		Location:       locationHandler,
 		LocationRate:   locationRateHandler,
 		MyArticles:     myarticlesHandler,
+		Article:        articleHandler,
 	}
 	return &app, nil
 }
