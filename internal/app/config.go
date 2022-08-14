@@ -9,8 +9,8 @@ import (
 	. "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/builder"
+	sv "github.com/core-go/core"
+	"github.com/core-go/core/builder"
 	. "github.com/core-go/signup/mail"
 	"github.com/core-go/sql"
 )

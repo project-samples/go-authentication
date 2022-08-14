@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"reflect"
 
+	sv "github.com/core-go/core"
 	"github.com/core-go/search"
-	sv "github.com/core-go/service"
 )
 
 type RateHandler interface {
@@ -14,7 +14,7 @@ type RateHandler interface {
 	Load(w http.ResponseWriter, r *http.Request)
 }
 
-func NewRateHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), load func(ctx context.Context, id interface{}, result interface{}) (bool, error), logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error) RateHandler {
+func NewRateHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), load func(ctx context.Context, id interface{}, result interface{}) (bool, error), logError func(context.Context, string, ...map[string]interface{}), writeLog func(context.Context, string, string, bool, string) error) RateHandler {
 	searchModelType := reflect.TypeOf(RateFilter{})
 	modelType := reflect.TypeOf(Rate{})
 	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, writeLog)
@@ -24,7 +24,7 @@ func NewRateHandler(find func(context.Context, interface{}, interface{}, int64, 
 type rateHandler struct {
 	load func(ctx context.Context, id interface{}, result interface{}) (bool, error)
 	*search.SearchHandler
-	Error func(context.Context, string)
+	Error func(context.Context, string, ...map[string]interface{})
 	Log   func(context.Context, string, string, bool, string) error
 }
 

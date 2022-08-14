@@ -10,6 +10,9 @@ import (
 
 	. "github.com/core-go/auth"
 	am "github.com/core-go/auth/mongo"
+	sv "github.com/core-go/core"
+	"github.com/core-go/core/shortid"
+	v "github.com/core-go/core/v10"
 	. "github.com/core-go/health"
 	"github.com/core-go/log"
 	. "github.com/core-go/mail"
@@ -25,13 +28,11 @@ import (
 	"github.com/core-go/search/mongo"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/shortid"
-	v "github.com/core-go/service/v10"
 	. "github.com/core-go/signup"
 	. "github.com/core-go/signup/mail"
 	sm "github.com/core-go/signup/mongo"
-	q "github.com/core-go/sql"
+	s "github.com/core-go/sql"
+	q "github.com/core-go/sql/query"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -68,7 +69,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		return nil, err
 	}
 	mongoDb := client.Database(conf.Mongo.Database)
-	db, err := q.OpenByConfig(conf.Sql)
+	db, err := s.OpenByConfig(conf.Sql)
 	if err != nil {
 		return nil, err
 	}
@@ -152,19 +153,19 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	userType := reflect.TypeOf(user.User{})
 	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", user.BuildQuery, search.GetSort)
 	getUser := mgo.UseGet(mongoDb, "user", userType)
-	userHandler := user.NewUserHandler(userSearchBuilder.Search, getUser, logError, nil)
+	userHandler := user.NewUserHandler(userSearchBuilder.Search, getUser, log.LogError, nil)
 
 	skillService := q.NewStringService(db, "skills", "skill")
-	skillHandler := NewQueryHandler(skillService.Load, logError)
+	skillHandler := NewQueryHandler(skillService.Load, log.LogError)
 	interestService := q.NewStringService(db, "interests", "interest")
-	interestHandler := NewQueryHandler(interestService.Load, logError)
+	interestHandler := NewQueryHandler(interestService.Load, log.LogError)
 	lookingForService := q.NewStringService(db, "searchs", "item")
-	lookingForHandler := NewQueryHandler(lookingForService.Load, logError)
+	lookingForHandler := NewQueryHandler(lookingForService.Load, log.LogError)
 
 	myprofileType := reflect.TypeOf(myprofile.User{})
 	userRepository := mgo.NewRepository(mongoDb, "user", myprofileType)
 	myProfileService := myprofile.NewUserService(userRepository)
-	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, skillService.Save, interestService.Save, lookingForService.Save)
+	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, log.LogError, nil, skillService.Save, interestService.Save, lookingForService.Save)
 
 	locationType := reflect.TypeOf(location.Location{})
 	locationInfoType := reflect.TypeOf(location.LocationInfo{})
@@ -174,27 +175,27 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	locationRepository := mgo.NewViewRepository(locationDb, "location", locationType, locationMapper.DbToModel)
 	locationInfoRepository := mgo.NewViewRepository(locationDb, "locationInfo", locationInfoType)
 	locationService := location.NewLocationService(locationRepository, locationInfoRepository)
-	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, logError, nil)
+	locationHandler := location.NewLocationHandler(locationSearchBuilder.Search, locationService, log.LogError, nil)
 
 	locationRateType := reflect.TypeOf(rate.Rate{})
 	locationRateQuery := query.UseQuery(locationRateType)
 	locationRateSearchBuilder := mgo.NewSearchBuilder(locationDb, "locationRate", locationRateQuery, search.GetSort)
 	getLocationRate := mgo.UseGet(locationDb, "locationRate", locationRateType)
-	locationRateHandler := rate.NewRateHandler(locationRateSearchBuilder.Search, getLocationRate, logError, nil)
+	locationRateHandler := rate.NewRateHandler(locationRateSearchBuilder.Search, getLocationRate, log.LogError, nil)
 
 	myarticlesType := reflect.TypeOf(myarticles.Article{})
 	myarticlesQuery := query.UseQuery(myarticlesType)
 	myarticlesSearchBuilder := mgo.NewSearchBuilder(locationDb, "article", myarticlesQuery, search.GetSort)
 	myarticlesRepository := mgo.NewRepository(locationDb, "article", myarticlesType)
 	myarticlesService := myarticles.NewArticleService(myarticlesRepository)
-	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, modelStatus, logError, validator.Validate, conf.Tracking, &action, nil)
+	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, modelStatus, log.LogError, validator.Validate, conf.Tracking, &action, nil)
 
 	articleType := reflect.TypeOf(article.Article{})
 	articleQuery := query.UseQuery(articleType)
 	articleSearchBuilder := mgo.NewSearchBuilder(locationDb, "article", articleQuery, search.GetSort)
 	articleRepository := mgo.NewRepository(locationDb, "article", articleType)
 	articleService := article.NewArticleService(articleRepository)
-	articleHandler := article.NewArticleHandler(articleSearchBuilder.Search, articleService, logError, nil)
+	articleHandler := article.NewArticleHandler(articleSearchBuilder.Search, articleService, log.LogError, nil)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
@@ -227,12 +228,12 @@ func NewMailService(mailConfig MailConfig) SimpleMailSender {
 
 type QueryHandler struct {
 	Load     func(ctx context.Context, key string, max int64) ([]string, error)
-	LogError func(context.Context, string)
+	LogError func(context.Context, string, ...map[string]interface{})
 	Keyword  string
 	Max      string
 }
 
-func NewQueryHandler(load func(ctx context.Context, key string, max int64) ([]string, error), logError func(context.Context, string), opts ...string) *QueryHandler {
+func NewQueryHandler(load func(ctx context.Context, key string, max int64) ([]string, error), logError func(context.Context, string, ...map[string]interface{}), opts ...string) *QueryHandler {
 	keyword := "keyword"
 	if len(opts) > 0 && len(opts[0]) > 0 {
 		keyword = opts[0]

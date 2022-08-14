@@ -2,7 +2,7 @@ package rate
 
 import (
 	"context"
-	sv "github.com/core-go/service"
+	sv "github.com/core-go/core"
 )
 
 type RateService interface {

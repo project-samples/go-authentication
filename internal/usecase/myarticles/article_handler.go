@@ -2,9 +2,9 @@ package myarticles
 
 import (
 	"context"
+	sv "github.com/core-go/core"
+	"github.com/core-go/core/builder"
 	"github.com/core-go/search"
-	sv "github.com/core-go/service"
-	"github.com/core-go/service/builder"
 	"net/http"
 	"reflect"
 )
@@ -18,7 +18,7 @@ type ArticleHandler interface {
 	Delete(w http.ResponseWriter, r *http.Request)
 }
 
-func NewArticleHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service ArticleService, generateId func(context.Context) (string, error), status sv.StatusConfig, logError func(context.Context, string), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), tracking builder.TrackingConfig, action *sv.ActionConfig, writeLog func(context.Context, string, string, bool, string) error) ArticleHandler {
+func NewArticleHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service ArticleService, generateId func(context.Context) (string, error), status sv.StatusConfig, logError func(context.Context, string, ...map[string]interface{}), validate func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error), tracking builder.TrackingConfig, action *sv.ActionConfig, writeLog func(context.Context, string, string, bool, string) error) ArticleHandler {
 	searchModelType := reflect.TypeOf(ArticleFilter{})
 	modelType := reflect.TypeOf(Article{})
 	builder := builder.NewBuilderWithIdAndConfig(generateId, modelType, tracking)

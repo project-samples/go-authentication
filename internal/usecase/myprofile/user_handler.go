@@ -3,8 +3,8 @@ package myprofile
 import (
 	"context"
 	"encoding/json"
-	sv "github.com/core-go/service"
-	v "github.com/core-go/service/v10"
+	sv "github.com/core-go/core"
+	v "github.com/core-go/core/v10"
 	"net/http"
 	"reflect"
 )
@@ -16,7 +16,7 @@ type MyProfileHandler interface {
 	SaveMySettings(w http.ResponseWriter, r *http.Request)
 }
 
-func NewMyProfileHandler(service UserService, logError func(context.Context, string), status *sv.StatusConfig,
+func NewMyProfileHandler(service UserService, logError func(context.Context, string, ...map[string]interface{}), status *sv.StatusConfig,
 		saveSkills func(ctx context.Context, values []string) (int64, error),
 		saveInterests func(ctx context.Context, values []string) (int64, error),
 		saveLookingFor func(ctx context.Context, values []string) (int64, error)) MyProfileHandler {
@@ -31,7 +31,7 @@ func NewMyProfileHandler(service UserService, logError func(context.Context, str
 type myProfileHandler struct {
 	service        UserService
 	Validate       func(ctx context.Context, model interface{}) ([]sv.ErrorMessage, error)
-	LogError       func(context.Context, string)
+	LogError       func(context.Context, string, ...map[string]interface{})
 	Keys           []string
 	Indexes        map[string]int
 	Status         sv.StatusConfig

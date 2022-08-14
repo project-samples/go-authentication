@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"reflect"
 
+	sv "github.com/core-go/core"
 	"github.com/core-go/search"
-	sv "github.com/core-go/service"
 )
 
 type ArticleHandler interface {
@@ -14,7 +14,7 @@ type ArticleHandler interface {
 	Load(w http.ResponseWriter, r *http.Request)
 }
 
-func NewArticleHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service ArticleService, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error) ArticleHandler {
+func NewArticleHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service ArticleService, logError func(context.Context, string, ...map[string]interface{}), writeLog func(context.Context, string, string, bool, string) error) ArticleHandler {
 	searchModelType := reflect.TypeOf(ArticleFilter{})
 	modelType := reflect.TypeOf(Article{})
 	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, writeLog)
@@ -24,7 +24,7 @@ func NewArticleHandler(find func(context.Context, interface{}, interface{}, int6
 type articleHandler struct {
 	service ArticleService
 	*search.SearchHandler
-	Error func(context.Context, string)
+	Error func(context.Context, string, ...map[string]interface{})
 	Log   func(context.Context, string, string, bool, string) error
 }
 
