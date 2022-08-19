@@ -2,22 +2,15 @@ package user
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/core-go/search"
 	sv "github.com/core-go/service"
-	"net/http"
-	"reflect"
 )
 
 type UserHandler interface {
 	Search(w http.ResponseWriter, r *http.Request)
 	Load(w http.ResponseWriter, r *http.Request)
-}
-
-func NewUserHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), load func(ctx context.Context, id interface{}, result interface{}) (bool, error), logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error) UserHandler {
-	searchModelType := reflect.TypeOf(UserFilter{})
-	modelType := reflect.TypeOf(User{})
-	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, writeLog)
-	return &userHandler{load: load, SearchHandler: searchHandler, Error: logError, Log: writeLog}
 }
 
 type userHandler struct {

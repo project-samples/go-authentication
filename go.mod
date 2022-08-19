@@ -21,7 +21,7 @@ require (
 	github.com/core-go/oauth2 v0.1.1
 	github.com/core-go/password v0.1.0
 	github.com/core-go/redis v0.0.1
-	github.com/core-go/search v0.2.5
+	github.com/core-go/search v0.2.7
 	github.com/core-go/security v0.1.0
 	github.com/core-go/service v0.2.1
 	github.com/core-go/signup v0.1.1

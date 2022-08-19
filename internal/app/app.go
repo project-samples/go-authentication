@@ -2,21 +2,27 @@ package app
 
 import (
 	"context"
+	"net/http"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/core-go/storage"
 	drop_box "github.com/core-go/storage/dropbox"
 	"github.com/core-go/storage/google"
 	google_drive "github.com/core-go/storage/google-drive"
 	one_drive "github.com/core-go/storage/one-drive"
 	"github.com/core-go/storage/s3"
-	"net/http"
-	"reflect"
-	"strconv"
-	"strings"
 
 	. "github.com/core-go/auth"
 	am "github.com/core-go/auth/mongo"
 	. "github.com/core-go/health"
+
 	//"github.com/core-go/log"
+	"go-service/internal/usecase/myprofile"
+	"go-service/internal/usecase/upload"
+	usr "go-service/internal/usecase/user"
+
 	. "github.com/core-go/mail"
 	. "github.com/core-go/mail/sendgrid"
 	. "github.com/core-go/mail/smtp"
@@ -27,7 +33,6 @@ import (
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
 	"github.com/core-go/redis"
-	"github.com/core-go/search"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	sv "github.com/core-go/service"
@@ -37,8 +42,6 @@ import (
 	sm "github.com/core-go/signup/mongo"
 	q "github.com/core-go/sql"
 	_ "github.com/lib/pq"
-	"go-service/internal/usecase/myprofile"
-	usr "go-service/internal/usecase/user"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -140,11 +143,6 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
 
-	userType := reflect.TypeOf(usr.User{})
-	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", usr.BuildQuery, search.GetSort)
-	getUser := mgo.UseGet(mongoDb, "user", userType)
-	userHandler := usr.NewUserHandler(userSearchBuilder.Search, getUser, logError, nil)
-
 	skillService := q.NewStringService(db, "skills", "skill")
 	skillHandler := NewQueryHandler(skillService.Load, logError)
 	interestService := q.NewStringService(db, "interests", "interest")
@@ -160,7 +158,9 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory, skillService.Save, interestService.Save, lookingForService.Save)
+	uploadHander := upload.NewUploadHandler(cloudService, conf.Provider, conf.GeneralDirectory,
+		conf.KeyFile, conf.Storage.Directory, myProfileService.LoadData, myProfileService.SaveMyProfile)
+	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory, skillService.Save, interestService.Save, lookingForService.Save, uploadHander)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
@@ -171,7 +171,6 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		Password:       passwordHandler,
 		SignUp:         signupHandler,
 		OAuth2:         oauth2Handler,
-		User:           userHandler,
 		MyProfile:      myProfileHandler,
 		Skill:          skillHandler,
 		Interest:       interestHandler,
@@ -234,5 +233,6 @@ func (h *QueryHandler) Query(w http.ResponseWriter, r *http.Request) {
 		}
 		vs, err := h.Load(r.Context(), keyword, i)
 		sv.RespondModel(w, r, vs, err, h.LogError, nil)
+
 	}
 }

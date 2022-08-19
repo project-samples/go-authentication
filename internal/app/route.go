@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+
 	. "github.com/core-go/security"
 	"github.com/gorilla/mux"
 )
@@ -31,17 +32,15 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	r.HandleFunc("/interests", app.Interest.Query).Methods(GET)
 	r.HandleFunc("/looking-for", app.LookingFor.Query).Methods(GET)
 
-	user := "/users"
-	r.HandleFunc(user+"/search", app.User.Search).Methods(GET, POST)
-	r.HandleFunc(user+"/{id}", app.User.Load).Methods(GET)
-
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.GetMyProfile).Methods(GET)
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.SaveMyProfile).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.GetMySettings).Methods(GET)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.SaveMySettings).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/upload", app.MyProfile.UploadImage).Methods(POST)
+	r.HandleFunc("/my-profile/{id}/gallery", app.MyProfile.UploadGallery).Methods(POST)
+	r.HandleFunc("/my-profile/{id}/cover", app.MyProfile.UploadCover).Methods(POST)
+	r.HandleFunc("/my-profile/{id}/gallery", app.MyProfile.DeleteGallery).Methods(DELETE)
 	r.HandleFunc("/my-profile/delete/{id}", app.MyProfile.DeleteFile).Methods(DELETE)
-
 	//r.HandleFunc("/my-profile/image/{id}", app.MyProfile.GetAvt).Methods(GET)
 
 	return err
