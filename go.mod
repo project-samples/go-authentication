@@ -10,13 +10,13 @@ require (
 	github.com/core-go/log v0.1.2
 	github.com/core-go/mail v0.0.0
 	github.com/core-go/mongo v0.3.1
-	github.com/core-go/oauth2 v0.1.1
-	github.com/core-go/password v0.1.0
+	github.com/core-go/oauth2 v0.1.3
+	github.com/core-go/password v0.1.2
 	github.com/core-go/redis v0.0.1
 	github.com/core-go/search v0.2.8
 	github.com/core-go/security v0.1.0
-	github.com/core-go/signup v0.1.1
-	github.com/core-go/sql v0.3.5
+	github.com/core-go/signup v0.1.3
+	github.com/core-go/sql v0.3.6
 	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.10.4

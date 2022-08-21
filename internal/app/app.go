@@ -2,10 +2,7 @@ package app
 
 import (
 	"context"
-	"github.com/core-go/mongo/geo"
-	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
 
 	. "github.com/core-go/auth"
@@ -19,6 +16,7 @@ import (
 	. "github.com/core-go/mail/sendgrid"
 	. "github.com/core-go/mail/smtp"
 	mgo "github.com/core-go/mongo"
+	"github.com/core-go/mongo/geo"
 	. "github.com/core-go/oauth2"
 	om "github.com/core-go/oauth2/mongo"
 	. "github.com/core-go/password"
@@ -54,9 +52,9 @@ type ApplicationContext struct {
 	OAuth2         *OAuth2Handler
 	User           user.UserHandler
 	MyProfile      myprofile.MyProfileHandler
-	Skill          *QueryHandler
-	Interest       *QueryHandler
-	LookingFor     *QueryHandler
+	Skill          *q.QueryHandler
+	Interest       *q.QueryHandler
+	LookingFor     *q.QueryHandler
 	Location       location.LocationHandler
 	LocationRate   rate.RateHandler
 	MyArticles     myarticles.ArticleHandler
@@ -114,7 +112,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	passwordResetSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Password.Template.ResetTemplate))
 	passwordChangeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Password.Template.ChangeTemplate))
 	passwordService := NewPasswordService(bcryptComparator, passwordRepository, conf.Password.ResetExpires, passResetCodeRepository, passwordResetSender.Send, tokenBlacklistChecker.RevokeAllTokens, exps, 5, nil, conf.Password.ChangeExpires, passResetCodeRepository, passwordChangeSender.Send)
-	passwordHandler := NewPasswordHandler(passwordService, logError, nil)
+	passwordHandler := NewPasswordHandler(passwordService, log.LogError, nil)
 
 	signUpCode := "signupCode"
 	signUpRepository := sm.NewSignUpRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
@@ -122,7 +120,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	signupStatus := InitSignUpStatus(conf.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
 	signUpService := NewSignUpService(signupStatus, true, signUpRepository, generateId, bcryptComparator.Hash, bcryptComparator, signUpCodeRepository, signupSender.Send, conf.SignUp.Expires, emailValidator.Validate, exps)
-	signupHandler := NewSignUpHandler(signUpService, signupStatus.Error, logError, conf.SignUp.Action)
+	signupHandler := NewSignUpHandler(signUpService, signupStatus.Error, log.LogError, conf.SignUp.Action)
 
 	integrationConfiguration := "integrationconfiguration"
 	sources := []string{SourceGoogle, SourceFacebook, SourceLinkedIn, SourceAmazon, SourceMicrosoft, SourceDropbox}
@@ -145,7 +143,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	configurationRepository := om.NewConfigurationRepository(mongoDb, integrationConfiguration, oauth2UserRepositories, "status", "A")
 
 	oauth2Service := NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, conf.Token, nil)
-	oauth2Handler := NewDefaultOAuth2Handler(oauth2Service, status.Error, logError)
+	oauth2Handler := NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
 	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
@@ -156,11 +154,11 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	userHandler := user.NewUserHandler(userSearchBuilder.Search, getUser, log.LogError, nil)
 
 	skillService := q.NewStringService(db, "skills", "skill")
-	skillHandler := NewQueryHandler(skillService.Load, log.LogError)
+	skillHandler := q.NewQueryHandler(skillService.Load, log.LogError)
 	interestService := q.NewStringService(db, "interests", "interest")
-	interestHandler := NewQueryHandler(interestService.Load, log.LogError)
+	interestHandler := q.NewQueryHandler(interestService.Load, log.LogError)
 	lookingForService := q.NewStringService(db, "searchs", "item")
-	lookingForHandler := NewQueryHandler(lookingForService.Load, log.LogError)
+	lookingForHandler := q.NewQueryHandler(lookingForService.Load, log.LogError)
 
 	myprofileType := reflect.TypeOf(myprofile.User{})
 	userRepository := mgo.NewRepository(mongoDb, "user", myprofileType)
@@ -224,42 +222,4 @@ func NewMailService(mailConfig MailConfig) SimpleMailSender {
 		return NewSimpleMailSender(NewSendGridMailSender(mailConfig.APIkey))
 	}
 	return NewSimpleMailSender(NewSmtpMailSender(mailConfig.SMTP))
-}
-
-type QueryHandler struct {
-	Load     func(ctx context.Context, key string, max int64) ([]string, error)
-	LogError func(context.Context, string, ...map[string]interface{})
-	Keyword  string
-	Max      string
-}
-
-func NewQueryHandler(load func(ctx context.Context, key string, max int64) ([]string, error), logError func(context.Context, string, ...map[string]interface{}), opts ...string) *QueryHandler {
-	keyword := "keyword"
-	if len(opts) > 0 && len(opts[0]) > 0 {
-		keyword = opts[0]
-	}
-	max := "max"
-	if len(opts) > 1 && len(opts[1]) > 0 {
-		max = opts[1]
-	}
-	return &QueryHandler{load, logError, keyword, max}
-}
-func (h *QueryHandler) Query(w http.ResponseWriter, r *http.Request) {
-	ps := r.URL.Query()
-	keyword := ps.Get(h.Keyword)
-	if len(keyword) == 0 {
-		vs := make([]string, 0)
-		sv.RespondModel(w, r, vs, nil, h.LogError, nil)
-	} else {
-		max := ps.Get(h.Max)
-		i, err := strconv.ParseInt(max, 10, 64)
-		if err != nil {
-			i = 20
-		}
-		if i < 0 {
-			i = 20
-		}
-		vs, err := h.Load(r.Context(), keyword, i)
-		sv.RespondModel(w, r, vs, err, h.LogError, nil)
-	}
 }
