@@ -8,10 +8,7 @@ import (
 	"strings"
 
 	"github.com/core-go/storage"
-	drop_box "github.com/core-go/storage/dropbox"
 	"github.com/core-go/storage/google"
-	google_drive "github.com/core-go/storage/google-drive"
-	one_drive "github.com/core-go/storage/one-drive"
 	"github.com/core-go/storage/s3"
 
 	. "github.com/core-go/auth"
@@ -179,13 +176,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	return &app, nil
 }
 func CreateCloudService(ctx context.Context, config Config) (storage.StorageService, error) {
-	if config.Provider == "google-drive" {
-		return google_drive.NewGoogleDriveService([]byte(config.GoogleDriveCredentials), false)
-	} else if config.Provider == "drop-box" {
-		return drop_box.NewDropboxService(config.DropboxToken)
-	} else if config.Provider == "one-drive" {
-		return one_drive.NewOneDriveService(ctx, config.OneDriveToken, false)
-	} else if config.Provider == "google-storage" {
+	if config.Provider == "google-storage" {
 		return google.NewGoogleStorageServiceWithCredentials(ctx, []byte(config.GoogleCredentials), config.Storage)
 	} else {
 		return s3.NewS3ServiceWithConfig(config.AWS, config.Storage)
