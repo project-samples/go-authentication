@@ -268,18 +268,13 @@ func (u *myProfileHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 
 	//get the *fileheaders
 	files := formdata.File[u.KeyFile] // grab the filenames
-	var directory string
-	if u.Provider == "google-storage" {
-		directory = u.Directory
-	} else {
-		directory = u.GeneralDirectory
-	}
 	_, handler, _ := r.FormFile(u.KeyFile)
 	contentType := handler.Header.Get(contentTypeHeader)
 	if len(contentType) == 0 {
 		contentType = getExt(handler.Filename)
 	}
-	var listURL []string
+	generateStr, _ := shortid.Generate(r.Context())
+	var list []upload.FileInfo
 	for i, _ := range files { // loop through the files one by one
 		file, err := files[i].Open()
 		if err != nil {
@@ -296,28 +291,18 @@ func (u *myProfileHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		bytes := out.Bytes()
-		rs, err2 := u.ServiceStorage.Upload(r.Context(), directory, files[i].Filename, bytes, contentType)
-		if err2 != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		listURL = append(listURL, rs)
+		name := generateStr + "_" + files[i].Filename
+		list = append(list, upload.FileInfo{name, bytes})
 
 	}
-
-	// res, _ := json.Marshal(rs)
 
 	id := sv.GetRequiredParam(w, r, 1)
-	if len(id) > 0 {
-		result, err4 := u.service.insertImage(r.Context(), id, listURL[0])
-		if err4 != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		sv.HandleResult(w, r, listURL, result, err4, u.Status, u.LogError, nil)
-		//respond(w, http.StatusOK, res)
+	rs, err := u.uploadHandler.UploadImage(id, list, contentType, r)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
-
+	respond(w, http.StatusOK, rs)
 }
 
 func (u *myProfileHandler) DeleteGallery(w http.ResponseWriter, r *http.Request) {

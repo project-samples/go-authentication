@@ -95,11 +95,11 @@ func (u *uploadHandler) UploadImage(id string, data []FileInfo, contentType stri
 
 	result, _ := u.loadData(r.Context(), id)
 	val := reflect.ValueOf(result).Elem()
-	cover := val.FieldByName("ImageURL").Interface().(string)
+	url := val.FieldByName("ImageURL").Interface().(string)
 
 	sizes := []int{40, 400}
-	if cover != "" {
-		_, err := u.DeleteFileUpload(sizes, cover, r)
+	if url != "" {
+		_, err := u.DeleteFileUpload(sizes, url, r)
 		if err != nil {
 			return "", errors.New("internal server error")
 		}
@@ -137,7 +137,12 @@ func (u *uploadHandler) UploadGallery(id string, source string, name string, con
 	}
 	result, _ := u.loadData(r.Context(), id)
 	val := reflect.ValueOf(result).Elem()
-	gallery := val.FieldByName("Gallery").Interface().([]UploadInfo)
+	fmt.Print(val.FieldByName("gallery").IsValid())
+	gallery := []UploadInfo{}
+	if val.FieldByName("gallery").IsValid() {
+		gallery = val.FieldByName("gallery").Interface().([]UploadInfo)
+	}
+
 	gallery = append(gallery, UploadInfo{Source: source, Type: strings.Split(contentType, "/")[0], Url: rs})
 	user := make(map[string]interface{})
 	user["userId"] = id
@@ -151,13 +156,7 @@ func (u *uploadHandler) UploadGallery(id string, source string, name string, con
 }
 
 func (u *uploadHandler) UploadFile(fileName string, contentType string, data []byte, r *http.Request) (rs string, errorRespone error) {
-
-	var directory string
-	if u.Provider == "google-storage" {
-		directory = u.Directory
-	} else {
-		directory = u.GeneralDirectory
-	}
+	directory := u.Directory
 	rs, err2 := u.Service.Upload(r.Context(), directory, fileName, data, contentType)
 	if err2 != nil {
 		errorRespone = err2
@@ -199,41 +198,33 @@ func (u *uploadHandler) DeleteGallery(url string, id string, r *http.Request) (b
 	return true, err2
 }
 func (u *uploadHandler) DeleteFileUpload(sizes []int, url string, r *http.Request) (bool, error) {
-	i := strings.LastIndex(url, "/")
-	filename := ""
-	if i <= 0 {
-		return false, errors.New("internal server error")
-	}
-	filename = url[i+1:]
-	i = strings.LastIndex(filename, "?")
-	filename = filename[:i]
-	rs, _ := u.DeleteFile(filename, r)
-	fmt.Print(rs)
+	// i := strings.LastIndex(url, "/")
+	// filename := ""
+	// if i <= 0 {
+	// 	return false, errors.New("internal server error")
+	// }
+	// filename = url[i+1:]
+	// i = strings.LastIndex(filename, "?")
+	// filename = filename[:i]
+	arrOrigin := strings.Split(url, "/")
+	delOriginUrl := arrOrigin[len(arrOrigin)-2] + "/" + arrOrigin[len(arrOrigin)-1]
+	rs, err := u.DeleteFile(delOriginUrl, r)
+	fmt.Print(rs, err)
 	// if err != nil {
 	// 	return false, errors.New("internal server error")
 	// }
 	for i := range sizes {
-		oldUrl := removeExt(filename) + "_" + strconv.Itoa(sizes[i]) + getExt(filename)
-
-		rs2, _ := u.DeleteFile(oldUrl, r)
-		// if err != nil {
-		// 	return false, errors.New("internal server error")
-		// }
-		fmt.Print(rs2)
+		oldUrl := removeExt(url) + "_" + strconv.Itoa(sizes[i]) + getExt(url)
+		arr := strings.Split(oldUrl, "/")
+		delUrl := arr[len(arr)-2] + "/" + arr[len(arr)-1]
+		rss, err := u.DeleteFile(delUrl, r)
+		fmt.Print(rss, err)
 	}
 	return true, nil
 }
 
 func (u *uploadHandler) DeleteFile(url string, r *http.Request) (bool, error) {
-	var filepath string
-
-	if u.Provider == "drop-box" {
-		filepath = fmt.Sprintf("/%s/%s", u.GeneralDirectory, url)
-	} else {
-		filepath = url
-	}
-
-	rs, err := u.Service.Delete(r.Context(), filepath)
+	rs, err := u.Service.Delete(r.Context(), url)
 	return rs, err
 }
 

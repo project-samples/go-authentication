@@ -7,8 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.42.25 // indirect
 	github.com/core-go/config v0.1.0
 	github.com/core-go/storage v0.0.8
-	github.com/dropbox/dropbox-sdk-go-unofficial/v6 v6.0.3 // indirect
-	github.com/goh-chunlin/go-onedrive v1.1.1 // indirect
 	github.com/gorilla/mux v1.8.0
 )
 

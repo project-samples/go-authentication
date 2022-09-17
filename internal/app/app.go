@@ -176,7 +176,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	return &app, nil
 }
 func CreateCloudService(ctx context.Context, config Config) (storage.StorageService, error) {
-	if config.Provider == "google-storage" {
+	if config.Provider == "google_storage" {
 		return google.NewGoogleStorageServiceWithCredentials(ctx, []byte(config.GoogleCredentials), config.Storage)
 	} else {
 		return s3.NewS3ServiceWithConfig(config.AWS, config.Storage)
