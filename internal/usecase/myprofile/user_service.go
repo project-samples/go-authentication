@@ -2,6 +2,7 @@ package myprofile
 
 import (
 	"context"
+	"go-service/internal/usecase/upload"
 
 	sv "github.com/core-go/service"
 )
@@ -14,7 +15,7 @@ type UserService interface {
 	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
 	insertImage(ctx context.Context, id string, image string) (int64, error)
 	insertCover(ctx context.Context, id string, image string) (int64, error)
-	insertGallery(ctx context.Context, id string, image UploadInfo) (int64, error)
+	insertGallery(ctx context.Context, id string, image upload.UploadInfo) (int64, error)
 	deleteGallery(ctx context.Context, id string, url string) (int64, error)
 }
 
@@ -69,7 +70,7 @@ func (s *userService) insertCover(ctx context.Context, id string, image string) 
 	return s.repository.Patch(ctx, user)
 }
 
-func (s *userService) insertGallery(ctx context.Context, id string, image UploadInfo) (int64, error) {
+func (s *userService) insertGallery(ctx context.Context, id string, image upload.UploadInfo) (int64, error) {
 	var user User
 	ok, err := s.repository.LoadAndDecode(ctx, id, &user)
 	if !ok {

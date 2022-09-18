@@ -17,13 +17,16 @@ import (
 
 const contentTypeHeader = "Content-Type"
 
-type UploadHandler interface {
-	UploadFile(fileName string, contentType string, data []byte, r *http.Request) (rs string, errorRespone error)
-	DeleteFile(url string, r *http.Request) (bool, error)
-	UploadGallery(id string, source string, name string, contentType string, data []byte, r *http.Request) ([]UploadInfo, error)
-	DeleteGallery(url string, id string, r *http.Request) (bool, error)
-	UploadCover(id string, data []FileInfo, contentType string, r *http.Request) (string, error)
-	UploadImage(id string, data []FileInfo, contentType string, r *http.Request) (string, error)
+type UploadService interface {
+	// UploadFile(fileName string, contentType string, data []byte, r *http.Request) (rs string, errorRespone error)
+	// DeleteFile(url string, r *http.Request) (bool, error)
+	UploadGallery(data Upload, r *http.Request) ([]UploadInfo, error)
+	DeleteGalleryFile(id string, url string, r *http.Request) (int64, error)
+	UploadCover(id string, data []UploadData, contentType string, r *http.Request, sizes []int) (string, error)
+	UploadImage(id string, data []UploadData, contentType string, r *http.Request, sizes []int) (string, error)
+	// getGalllery(id string, r *http.Request) []UploadInfo
+	// addExternalResource(id string, data UploadInfo, r *http.Request) (bool, error)
+	// deleteExternalResource(id string, url string, r *http.Request) (bool, error)
 }
 
 type uploadHandler struct {
@@ -43,24 +46,23 @@ type UploadInfo struct {
 	Type   string `json:"category,omitempty" gorm:"column:category" bson:"category,omitempty" dynamodbav:"category,omitempty" firestore:"category,omitempty"`
 }
 
-type FileInfo struct {
+type UploadData struct {
 	Name string `json:"name,omitempty" gorm:"column:name" bson:"name,omitempty" dynamodbav:"name,omitempty" firestore:"name,omitempty"`
 	Data []byte `json:"data,omitempty" gorm:"column:data" bson:"data,omitempty" dynamodbav:"data,omitempty" firestore:"data,omitempty"`
 }
 
-func NewUploadHandler(service storage.StorageService, provider string, generalDirectory string,
-	keyFile string, directory string, loadData func(ctx context.Context, id string) (interface{}, error), patchData func(ctx context.Context, user map[string]interface{}) (int64, error)) UploadHandler {
+func NewUploadService(service storage.StorageService, provider string, generalDirectory string,
+	keyFile string, directory string, loadData func(ctx context.Context, id string) (interface{}, error), patchData func(ctx context.Context, user map[string]interface{}) (int64, error)) UploadService {
 	return &uploadHandler{Service: service, Provider: provider, GeneralDirectory: generalDirectory, KeyFile: keyFile, Directory: directory, loadData: loadData, patchData: patchData}
 }
 
-func (u *uploadHandler) UploadCover(id string, data []FileInfo, contentType string, r *http.Request) (string, error) {
+func (u *uploadHandler) UploadCover(id string, data []UploadData, contentType string, r *http.Request, sizes []int) (string, error) {
 	//delete
 
 	result, _ := u.loadData(r.Context(), id)
 	val := reflect.ValueOf(result).Elem()
 	cover := val.FieldByName("CoverURL").Interface().(string)
 
-	sizes := []int{576, 768}
 	if cover != "" {
 		_, err := u.DeleteFileUpload(sizes, cover, r)
 		if err != nil {
@@ -81,7 +83,7 @@ func (u *uploadHandler) UploadCover(id string, data []FileInfo, contentType stri
 		newUrl = rs
 	}
 	user := make(map[string]interface{})
-	user["id"] = id
+	user["userId"] = id
 	user["coverURL"] = newUrl
 	_, err1 := u.patchData(r.Context(), user)
 	if err1 != nil {
@@ -90,14 +92,14 @@ func (u *uploadHandler) UploadCover(id string, data []FileInfo, contentType stri
 	return newUrl, nil
 }
 
-func (u *uploadHandler) UploadImage(id string, data []FileInfo, contentType string, r *http.Request) (string, error) {
+func (u *uploadHandler) UploadImage(id string, data []UploadData, contentType string, r *http.Request, sizes []int) (string, error) {
 	//delete
 
 	result, _ := u.loadData(r.Context(), id)
 	val := reflect.ValueOf(result).Elem()
 	url := val.FieldByName("ImageURL").Interface().(string)
 
-	sizes := []int{40, 400}
+	// sizes := []int{40, 400}
 	if url != "" {
 		_, err := u.DeleteFileUpload(sizes, url, r)
 		if err != nil {
@@ -118,7 +120,7 @@ func (u *uploadHandler) UploadImage(id string, data []FileInfo, contentType stri
 		newUrl = rs
 	}
 	user := make(map[string]interface{})
-	user["id"] = id
+	user["userId"] = id
 	user["imageURL"] = newUrl
 	_, err1 := u.patchData(r.Context(), user)
 	if err1 != nil {
@@ -127,25 +129,25 @@ func (u *uploadHandler) UploadImage(id string, data []FileInfo, contentType stri
 	return newUrl, nil
 }
 
-func (u *uploadHandler) UploadGallery(id string, source string, name string, contentType string, data []byte, r *http.Request) ([]UploadInfo, error) {
+func (u *uploadHandler) UploadGallery(data Upload, r *http.Request) ([]UploadInfo, error) {
 	sid, _ := shortid.Generate(r.Context())
-	fileName := removeExt(name) + "_" + sid + getExt(name)
+	fileName := removeExt(data.Name) + "_" + sid + getExt(data.Name)
 
-	rs, errorRespone := u.UploadFile(fileName, contentType, data, r)
+	rs, errorRespone := u.UploadFile(fileName, data.Type, data.Data, r)
 	if errorRespone != nil {
 		return nil, errorRespone
 	}
-	result, _ := u.loadData(r.Context(), id)
+	result, _ := u.loadData(r.Context(), data.UserId)
 	val := reflect.ValueOf(result).Elem()
-	fmt.Print(val.FieldByName("gallery").IsValid())
+	fmt.Print(val.FieldByName("Gallery").IsValid())
 	gallery := []UploadInfo{}
-	if val.FieldByName("gallery").IsValid() {
-		gallery = val.FieldByName("gallery").Interface().([]UploadInfo)
+	if val.FieldByName("Gallery").IsValid() {
+		gallery = val.FieldByName("Gallery").Interface().([]UploadInfo)
 	}
 
-	gallery = append(gallery, UploadInfo{Source: source, Type: strings.Split(contentType, "/")[0], Url: rs})
+	gallery = append(gallery, UploadInfo{Source: data.Source, Type: strings.Split(data.Type, "/")[0], Url: rs})
 	user := make(map[string]interface{})
-	user["userId"] = id
+	user["userId"] = data.UserId
 	user["gallery"] = gallery
 
 	_, err := u.patchData(r.Context(), user)
@@ -165,7 +167,7 @@ func (u *uploadHandler) UploadFile(fileName string, contentType string, data []b
 	return
 }
 
-func (u *uploadHandler) DeleteGallery(url string, id string, r *http.Request) (bool, error) {
+func (u *uploadHandler) DeleteGalleryFile(id string, url string, r *http.Request) (int64, error) {
 	// a = struct {
 	// 	UserId string
 	// }{}
@@ -181,11 +183,11 @@ func (u *uploadHandler) DeleteGallery(url string, id string, r *http.Request) (b
 		}
 	}
 	if idx == -1 {
-		return false, nil
+		return 0, nil
 	}
 	_, err := u.DeleteFile(url, r)
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 	gallery = append(gallery[:idx], gallery[idx+1:]...)
 	user := make(map[string]interface{})
@@ -193,9 +195,9 @@ func (u *uploadHandler) DeleteGallery(url string, id string, r *http.Request) (b
 	user["gallery"] = gallery
 	_, err2 := u.patchData(r.Context(), user)
 	if err2 != nil {
-		return false, err2
+		return 0, err2
 	}
-	return true, err2
+	return 1, err2
 }
 func (u *uploadHandler) DeleteFileUpload(sizes []int, url string, r *http.Request) (bool, error) {
 	// i := strings.LastIndex(url, "/")

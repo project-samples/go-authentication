@@ -155,9 +155,10 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	uploadHander := upload.NewUploadHandler(cloudService, conf.Provider, conf.GeneralDirectory,
+	uploadService := upload.NewUploadService(cloudService, conf.Provider, conf.GeneralDirectory,
 		conf.KeyFile, conf.Storage.Directory, myProfileService.LoadData, myProfileService.SaveMyProfile)
-	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory, skillService.Save, interestService.Save, lookingForService.Save, uploadHander)
+
+	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, logError, nil, cloudService, conf.Provider, conf.GeneralDirectory, conf.KeyFile, conf.Storage.Directory, skillService.Save, interestService.Save, lookingForService.Save, uploadService)
 
 	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
 
