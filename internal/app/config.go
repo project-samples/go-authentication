@@ -3,23 +3,23 @@ package app
 import (
 	. "github.com/core-go/auth"
 	. "github.com/core-go/auth/mail"
+	o2 "github.com/core-go/auth/oauth2"
 	sv "github.com/core-go/core"
 	"github.com/core-go/core/builder"
 	. "github.com/core-go/mail/smtp"
 	"github.com/core-go/mongo"
-	o2 "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
-	v9 "github.com/core-go/redis/v8"
+	"github.com/core-go/redis/v8"
 	. "github.com/core-go/signup/mail"
 	"github.com/core-go/sql"
 )
 
 type Config struct {
-	Server   ServerConfig `mapstructure:"server"`
-	Mongo    mongo.MongoConfig  `mapstructure:"mongo"`
-	Location mongo.MongoConfig  `mapstructure:"location"`
-	Sql      sql.Config   `mapstructure:"sql"`
-	Redis    v9.Config `mapstructure:"redis"`
+	Server   ServerConfig      `mapstructure:"server"`
+	Mongo    mongo.MongoConfig `mapstructure:"mongo"`
+	Location mongo.MongoConfig `mapstructure:"location"`
+	Sql      sql.Config        `mapstructure:"sql"`
+	Redis    v8.Config         `mapstructure:"redis"`
 
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`

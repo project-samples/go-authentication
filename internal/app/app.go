@@ -8,6 +8,8 @@ import (
 	. "github.com/core-go/auth"
 	h "github.com/core-go/auth/handler"
 	am "github.com/core-go/auth/mongo"
+	oa2 "github.com/core-go/auth/oauth2"
+	om "github.com/core-go/auth/oauth2/mongo"
 	sv "github.com/core-go/core"
 	"github.com/core-go/core/shortid"
 	v "github.com/core-go/core/v10"
@@ -18,13 +20,11 @@ import (
 	. "github.com/core-go/mail/smtp"
 	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mongo/geo"
-	oa2 "github.com/core-go/oauth2"
-	om "github.com/core-go/oauth2/mongo"
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
-	v9 "github.com/core-go/redis/v8"
+	"github.com/core-go/redis/v8"
 	"github.com/core-go/search"
-	query "github.com/core-go/search/mongo/query"
+	"github.com/core-go/search/mongo/query"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	. "github.com/core-go/signup"
@@ -87,7 +87,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	userCollection := "user"
 	authentication := "authentication"
 
-	redisService, err := v9.NewRedisServiceByConfig(conf.Redis)
+	redisService, err := v8.NewRedisAdapterByConfig(conf.Redis)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
 	mongoHealthChecker := mgo.NewHealthChecker(client)
-	redisHealthChecker := v9.NewHealthChecker(redisService.Client)
+	redisHealthChecker := v8.NewHealthChecker(redisService.Client)
 
 	userType := reflect.TypeOf(user.User{})
 	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", user.BuildQuery, search.GetSort)
