@@ -87,11 +87,11 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	userCollection := "user"
 	authentication := "authentication"
 
-	redisService, err := v8.NewRedisAdapterByConfig(conf.Redis)
+	redisPort, err := v8.NewRedisAdapterByConfig(conf.Redis)
 	if err != nil {
 		return nil, err
 	}
-	tokenBlacklistChecker := NewTokenBlacklistChecker("blacklist:", conf.Token.Expires, redisService)
+	tokenBlacklistChecker := NewTokenBlacklistChecker("blacklist:", conf.Token.Expires, redisPort)
 
 	mailService := NewMailService(conf.Mail)
 
@@ -150,7 +150,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
 	mongoHealthChecker := mgo.NewHealthChecker(client)
-	redisHealthChecker := v8.NewHealthChecker(redisService.Client)
+	redisHealthChecker := v8.NewHealthChecker(redisPort.Client)
 
 	userType := reflect.TypeOf(user.User{})
 	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", user.BuildQuery, search.GetSort)
