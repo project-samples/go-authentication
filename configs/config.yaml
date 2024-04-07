@@ -57,7 +57,7 @@ auth:
     body: "%s Use this code for verification"
   schema:
     id: userId
-    user_name: userName
+    username: username
     success_time: successTime
     fail_time: failTime
     fail_count: failCount
@@ -124,7 +124,7 @@ oauth2:
   services: google
   schema:
     user_id: userId
-    user_name: userName
+    username: username
     email: email
     status: status
     oauth2_email: Email

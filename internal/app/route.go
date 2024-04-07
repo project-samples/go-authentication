@@ -13,7 +13,7 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	}
 	r.HandleFunc("/health", app.Health.Check).Methods(GET)
 
-	r.HandleFunc("/authentication", app.Authentication.Authenticate).Methods(POST)
+	r.HandleFunc("/authentication/authenticate", app.Authentication.Authenticate).Methods(POST)
 	r.HandleFunc("/authentication/signout/{username}", app.SignOut.SignOut).Methods(GET)
 
 	r.HandleFunc("/password/change", app.Password.ChangePassword).Methods(POST)

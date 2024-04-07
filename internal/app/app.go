@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	. "github.com/core-go/auth"
+	h "github.com/core-go/auth/handler"
 	am "github.com/core-go/auth/mongo"
 	sv "github.com/core-go/core"
 	"github.com/core-go/core/shortid"
@@ -17,7 +18,7 @@ import (
 	. "github.com/core-go/mail/smtp"
 	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mongo/geo"
-	. "github.com/core-go/oauth2"
+	oa2 "github.com/core-go/oauth2"
 	om "github.com/core-go/oauth2/mongo"
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
@@ -45,11 +46,11 @@ import (
 
 type ApplicationContext struct {
 	Health         *Handler
-	Authentication *AuthenticationHandler
-	SignOut        *SignOutHandler
+	Authentication *h.AuthenticationHandler
+	SignOut        *h.SignOutHandler
 	Password       *PasswordHandler
 	SignUp         *SignUpHandler
-	OAuth2         *OAuth2Handler
+	OAuth2         *oa2.OAuth2Handler
 	User           user.UserHandler
 	MyProfile      myprofile.MyProfileHandler
 	Skill          *q.QueryHandler
@@ -75,7 +76,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	logError := log.ErrorMsg
+	logError := log.LogError
 	modelStatus := sv.InitializeStatus(conf.ModelStatus)
 	action := sv.InitializeAction(conf.Action)
 	validator := v.NewValidator()
@@ -93,15 +94,16 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	mailService := NewMailService(conf.Mail)
 
 	authenticationRepository := am.NewAuthenticationRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
-	userInfoService := NewUserInfoService(authenticationRepository, conf.MaxPasswordAge, conf.MaxPasswordFailed, conf.LockedMinutes)
+	// userInfoService := NewUserInfoService(authenticationRepository, conf.MaxPasswordAge, conf.MaxPasswordFailed, conf.LockedMinutes)
 	bcryptComparator := &BCryptStringComparator{}
 	tokenService := NewTokenService()
 	verifiedCodeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Auth.Template))
 	passCodeService := mgo.NewPasscodeRepository(mongoDb, "authenpasscode")
 	status := InitStatus(conf.Status)
-	authenticator := NewAuthenticatorWithTwoFactors(status, userInfoService, bcryptComparator, tokenService.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passCodeService, conf.Auth.Expires)
-	authenticationHandler := NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
-	signOutHandler := NewSignOutHandler(tokenService.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
+	authenticator := NewAuthenticatorWithTwoFactors(status, authenticationRepository, bcryptComparator, tokenService.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passCodeService, conf.Auth.Expires)
+	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
+	authenticationHandler.Cookie = false
+	signOutHandler := h.NewSignOutHandler(tokenService.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
 	passwordRepository := pm.NewPasswordRepositoryByConfig(mongoDb, userCollection, authentication, userCollection, "userId", conf.Password.Schema)
@@ -123,27 +125,27 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	signupHandler := NewSignUpHandler(signUpService, signupStatus.Error, log.LogError, conf.SignUp.Action)
 
 	integrationConfiguration := "integrationconfiguration"
-	sources := []string{SourceGoogle, SourceFacebook, SourceLinkedIn, SourceAmazon, SourceMicrosoft, SourceDropbox}
-	oauth2UserRepositories := make(map[string]OAuth2UserRepository)
-	oauth2UserRepositories[SourceGoogle] = NewGoogleUserRepository()
-	oauth2UserRepositories[SourceFacebook] = NewFacebookUserRepository()
-	oauth2UserRepositories[SourceLinkedIn] = NewLinkedInUserRepository()
-	oauth2UserRepositories[SourceAmazon] = NewAmazonUserRepository(conf.CallBackURL.Amazon)
-	oauth2UserRepositories[SourceMicrosoft] = NewMicrosoftUserRepository(conf.CallBackURL.Microsoft)
-	oauth2UserRepositories[SourceDropbox] = NewDropboxUserRepository()
+	sources := []string{oa2.SourceGoogle, oa2.SourceFacebook, oa2.SourceLinkedIn, oa2.SourceAmazon, oa2.SourceMicrosoft, oa2.SourceDropbox}
+	oauth2UserRepositories := make(map[string]oa2.OAuth2UserRepository)
+	oauth2UserRepositories[oa2.SourceGoogle] = oa2.NewGoogleUserRepository()
+	oauth2UserRepositories[oa2.SourceFacebook] = oa2.NewFacebookUserRepository()
+	oauth2UserRepositories[oa2.SourceLinkedIn] = oa2.NewLinkedInUserRepository()
+	oauth2UserRepositories[oa2.SourceAmazon] = oa2.NewAmazonUserRepository(conf.CallBackURL.Amazon)
+	oauth2UserRepositories[oa2.SourceMicrosoft] = oa2.NewMicrosoftUserRepository(conf.CallBackURL.Microsoft)
+	oauth2UserRepositories[oa2.SourceDropbox] = oa2.NewDropboxUserRepository()
 
 	activatedStatus := conf.SignUp.UserStatus.Activated
 	schema := conf.OAuth2.Schema
 	services := strings.Split(conf.OAuth2.Services, ",")
-	userRepositories := make(map[string]UserRepository)
+	userRepositories := make(map[string]oa2.UserRepository)
 	for _, source := range sources {
 		userRepository := om.NewUserRepositoryByConfig(mongoDb, userCollection, source, activatedStatus, services, schema, &conf.UserStatus)
 		userRepositories[source] = userRepository
 	}
 	configurationRepository := om.NewConfigurationRepository(mongoDb, integrationConfiguration, oauth2UserRepositories, "status", "A")
 
-	oauth2Service := NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, conf.Token, nil)
-	oauth2Handler := NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
+	oauth2Service := oa2.NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, conf.Token, nil)
+	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
 	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
 	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)

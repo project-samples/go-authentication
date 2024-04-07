@@ -3,14 +3,14 @@ module go-service
 go 1.15
 
 require (
-	github.com/core-go/auth v0.1.2
+	github.com/core-go/auth v0.2.9
 	github.com/core-go/config v0.1.0
 	github.com/core-go/core v0.3.3
-	github.com/core-go/health v0.4.7
-	github.com/core-go/log v0.1.2
+	github.com/core-go/health v1.0.0
+	github.com/core-go/log v1.0.0
 	github.com/core-go/mail v0.0.0
 	github.com/core-go/mongo v0.3.1
-	github.com/core-go/oauth2 v0.1.3
+	github.com/core-go/oauth2 v0.1.9
 	github.com/core-go/password v0.1.2
 	github.com/core-go/redis v0.0.1
 	github.com/core-go/search v0.2.8
