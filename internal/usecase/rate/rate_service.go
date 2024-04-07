@@ -19,7 +19,7 @@ type rateService struct {
 
 func (s *rateService) Load(ctx context.Context, id string) (*Rate, error) {
 	var locationRate Rate
-	ok, err := s.repository.LoadAndDecode(ctx, id, &locationRate)
+	ok, err := s.repository.Get(ctx, id, &locationRate)
 	if !ok {
 		return nil, err
 	} else {

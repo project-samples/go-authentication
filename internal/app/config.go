@@ -9,7 +9,7 @@ import (
 	"github.com/core-go/mongo"
 	o2 "github.com/core-go/oauth2"
 	. "github.com/core-go/password/mail"
-	"github.com/core-go/redis"
+	v9 "github.com/core-go/redis/v8"
 	. "github.com/core-go/signup/mail"
 	"github.com/core-go/sql"
 )
@@ -19,7 +19,7 @@ type Config struct {
 	Mongo    mongo.MongoConfig  `mapstructure:"mongo"`
 	Location mongo.MongoConfig  `mapstructure:"location"`
 	Sql      sql.Config   `mapstructure:"sql"`
-	Redis    redis.Config `mapstructure:"redis"`
+	Redis    v9.Config `mapstructure:"redis"`
 
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`

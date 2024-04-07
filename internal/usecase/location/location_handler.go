@@ -14,7 +14,7 @@ type LocationHandler interface {
 	Load(w http.ResponseWriter, r *http.Request)
 }
 
-func NewLocationHandler(find func(context.Context, interface{}, interface{}, int64, ...int64) (int64, string, error), service LocationService, logError func(context.Context, string, ...map[string]interface{}), writeLog func(context.Context, string, string, bool, string) error) LocationHandler {
+func NewLocationHandler(find func(context.Context, interface{}, interface{}, int64, int64) (int64, error), service LocationService, logError func(context.Context, string, ...map[string]interface{}), writeLog func(context.Context, string, string, bool, string) error) LocationHandler {
 	searchModelType := reflect.TypeOf(LocationFilter{})
 	modelType := reflect.TypeOf(Location{})
 	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, writeLog)
@@ -32,6 +32,6 @@ func (h *locationHandler) Load(w http.ResponseWriter, r *http.Request) {
 	id := sv.GetRequiredParam(w, r)
 	if len(id) > 0 {
 		result, err := h.service.Load(r.Context(), id)
-		sv.RespondModel(w, r, result, err, h.Error, nil)
+		sv.Return(w, r, result, err, h.Error, nil)
 	}
 }

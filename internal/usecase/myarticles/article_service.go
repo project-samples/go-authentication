@@ -23,7 +23,7 @@ type articleService struct {
 
 func (s *articleService) Load(ctx context.Context, id string) (*Article, error) {
 	var Article Article
-	ok, err := s.repository.LoadAndDecode(ctx, id, &Article)
+	ok, err := s.repository.Get(ctx, id, &Article)
 	if !ok {
 		return nil, err
 	} else {

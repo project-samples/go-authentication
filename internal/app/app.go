@@ -22,9 +22,9 @@ import (
 	om "github.com/core-go/oauth2/mongo"
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
-	"github.com/core-go/redis"
+	v9 "github.com/core-go/redis/v8"
 	"github.com/core-go/search"
-	"github.com/core-go/search/mongo"
+	query "github.com/core-go/search/mongo/query"
 	. "github.com/core-go/security/crypto"
 	. "github.com/core-go/security/jwt"
 	. "github.com/core-go/signup"
@@ -77,15 +77,17 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 		return nil, err
 	}
 	logError := log.LogError
-	modelStatus := sv.InitializeStatus(conf.ModelStatus)
 	action := sv.InitializeAction(conf.Action)
-	validator := v.NewValidator()
+	validator, err := v.NewValidator()
+	if err != nil {
+		return nil, err
+	}
 	generateId := shortid.Generate
 
 	userCollection := "user"
 	authentication := "authentication"
 
-	redisService, err := redis.NewRedisServiceByConfig(conf.Redis)
+	redisService, err := v9.NewRedisServiceByConfig(conf.Redis)
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +149,8 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	oauth2Service := oa2.NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, conf.Token, nil)
 	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
-	mongoHealthChecker := mgo.NewHealthChecker(mongoDb)
-	redisHealthChecker := redis.NewHealthChecker(redisService.Pool)
+	mongoHealthChecker := mgo.NewHealthChecker(client)
+	redisHealthChecker := v9.NewHealthChecker(redisService.Client)
 
 	userType := reflect.TypeOf(user.User{})
 	userSearchBuilder := mgo.NewSearchBuilder(mongoDb, "user", user.BuildQuery, search.GetSort)
@@ -165,7 +167,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	myprofileType := reflect.TypeOf(myprofile.User{})
 	userRepository := mgo.NewRepository(mongoDb, "user", myprofileType)
 	myProfileService := myprofile.NewUserService(userRepository)
-	myProfileHandler := myprofile.NewMyProfileHandler(myProfileService, log.LogError, nil, skillService.Save, interestService.Save, lookingForService.Save)
+	myProfileHandler, err := myprofile.NewMyProfileHandler(myProfileService, log.LogError, skillService.Save, interestService.Save, lookingForService.Save)
 
 	locationType := reflect.TypeOf(location.Location{})
 	locationInfoType := reflect.TypeOf(location.LocationInfo{})
@@ -188,7 +190,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	myarticlesSearchBuilder := mgo.NewSearchBuilder(locationDb, "article", myarticlesQuery, search.GetSort)
 	myarticlesRepository := mgo.NewRepository(locationDb, "article", myarticlesType)
 	myarticlesService := myarticles.NewArticleService(myarticlesRepository)
-	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, modelStatus, log.LogError, validator.Validate, conf.Tracking, &action, nil)
+	myarticlesHandler := myarticles.NewArticleHandler(myarticlesSearchBuilder.Search, myarticlesService, generateId, log.LogError, validator.Validate, conf.Tracking, &action, nil)
 
 	articleType := reflect.TypeOf(article.Article{})
 	articleQuery := query.UseQuery(articleType)

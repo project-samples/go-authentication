@@ -25,7 +25,7 @@ func (s *userService) SaveMyProfile(ctx context.Context, user map[string]interfa
 }
 func (s *userService) GetMyProfile(ctx context.Context, id string) (*User, error) {
 	var user User
-	ok, err := s.repository.LoadAndDecode(ctx, id, &user)
+	ok, err := s.repository.Get(ctx, id, &user)
 	if !ok {
 		return nil, err
 	} else {
@@ -35,7 +35,7 @@ func (s *userService) GetMyProfile(ctx context.Context, id string) (*User, error
 }
 func (s *userService) GetMySettings(ctx context.Context, id string) (*Settings, error) {
 	var user User
-	ok, err := s.repository.LoadAndDecode(ctx, id, &user)
+	ok, err := s.repository.Get(ctx, id, &user)
 	if !ok {
 		return nil, err
 	} else {
