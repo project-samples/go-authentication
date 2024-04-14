@@ -11,6 +11,8 @@ import (
 	oa2 "github.com/core-go/auth/oauth2"
 	om "github.com/core-go/auth/oauth2/mongo"
 	sv "github.com/core-go/core"
+	. "github.com/core-go/core/crypto"
+	. "github.com/core-go/core/jwt"
 	"github.com/core-go/core/shortid"
 	v "github.com/core-go/core/v10"
 	. "github.com/core-go/health"
@@ -25,8 +27,6 @@ import (
 	"github.com/core-go/redis/v8"
 	"github.com/core-go/search"
 	"github.com/core-go/search/mongo/query"
-	. "github.com/core-go/security/crypto"
-	. "github.com/core-go/security/jwt"
 	. "github.com/core-go/signup"
 	. "github.com/core-go/signup/mail"
 	sm "github.com/core-go/signup/mongo"
@@ -95,14 +95,13 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 
 	mailService := NewMailService(conf.Mail)
 
-	authenticationRepository := am.NewAuthenticationRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
-	// userInfoService := NewUserInfoService(authenticationRepository, conf.MaxPasswordAge, conf.MaxPasswordFailed, conf.LockedMinutes)
+	userPort := am.NewUserAdapterByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
 	bcryptComparator := &BCryptStringComparator{}
 	tokenService := NewTokenService()
 	verifiedCodeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Auth.Template))
 	passCodeService := mgo.NewPasscodeRepository(mongoDb, "authenpasscode")
 	status := InitStatus(conf.Status)
-	authenticator := NewAuthenticatorWithTwoFactors(status, authenticationRepository, bcryptComparator, tokenService.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passCodeService, conf.Auth.Expires)
+	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenService.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passCodeService, conf.Auth.Expires)
 	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
 	authenticationHandler.Cookie = false
 	signOutHandler := h.NewSignOutHandler(tokenService.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)

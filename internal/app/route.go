@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	. "github.com/core-go/security"
+	. "github.com/core-go/core/security"
 	"github.com/gorilla/mux"
 )
 
