@@ -103,7 +103,6 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	status := InitStatus(conf.Status)
 	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenPort.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passcodeRepository, conf.Auth.Expires)
 	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
-	authenticationHandler.Cookie = false
 	signOutHandler := h.NewSignOutHandler(tokenPort.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
