@@ -97,14 +97,14 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 
 	userPort := am.NewUserAdapterByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
 	bcryptComparator := &BCryptStringComparator{}
-	tokenService := NewTokenService()
+	tokenPort := NewTokenAdapter()
 	verifiedCodeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Auth.Template))
-	passCodeService := mgo.NewPasscodeRepository(mongoDb, "authenpasscode")
+	passcodeRepository := mgo.NewPasscodeRepository(mongoDb, "authenpasscode")
 	status := InitStatus(conf.Status)
-	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenService.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passCodeService, conf.Auth.Expires)
+	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenPort.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passcodeRepository, conf.Auth.Expires)
 	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
 	authenticationHandler.Cookie = false
-	signOutHandler := h.NewSignOutHandler(tokenService.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
+	signOutHandler := h.NewSignOutHandler(tokenPort.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
 	passwordRepository := pm.NewPasswordRepositoryByConfig(mongoDb, userCollection, authentication, userCollection, "userId", conf.Password.Schema)
@@ -117,13 +117,13 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	passwordService := NewPasswordService(bcryptComparator, passwordRepository, conf.Password.ResetExpires, passResetCodeRepository, passwordResetSender.Send, tokenBlacklistChecker.RevokeAllTokens, exps, 5, nil, conf.Password.ChangeExpires, passResetCodeRepository, passwordChangeSender.Send)
 	passwordHandler := NewPasswordHandler(passwordService, log.LogError, nil)
 
-	signUpCode := "signupCode"
-	signUpRepository := sm.NewSignUpRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
-	signUpCodeRepository := mgo.NewPasscodeRepository(mongoDb, signUpCode)
+	signupCode := "signupCode"
+	signupRepository := sm.NewSignUpRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
+	signupCodeRepository := mgo.NewPasscodeRepository(mongoDb, signupCode)
 	signupStatus := InitSignUpStatus(conf.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
-	signUpService := NewSignUpService(signupStatus, true, signUpRepository, generateId, bcryptComparator.Hash, bcryptComparator, signUpCodeRepository, signupSender.Send, conf.SignUp.Expires, emailValidator.Validate, exps)
-	signupHandler := NewSignUpHandler(signUpService, signupStatus.Error, log.LogError, conf.SignUp.Action)
+	signupService := NewSignUpService(signupStatus, true, signupRepository, generateId, bcryptComparator.Hash, bcryptComparator, signupCodeRepository, signupSender.Send, conf.SignUp.Expires, emailValidator.Validate, exps)
+	signupHandler := NewSignUpHandler(signupService, signupStatus.Error, log.LogError, conf.SignUp.Action)
 
 	integrationConfiguration := "integrationconfiguration"
 	sources := []string{oa2.SourceGoogle, oa2.SourceFacebook, oa2.SourceLinkedIn, oa2.SourceAmazon, oa2.SourceMicrosoft, oa2.SourceDropbox}
@@ -145,7 +145,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	}
 	configurationRepository := om.NewConfigurationRepository(mongoDb, integrationConfiguration, oauth2UserRepositories, "status", "A")
 
-	oauth2Service := oa2.NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenService, conf.Token, nil)
+	oauth2Service := oa2.NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenPort, conf.Token, nil)
 	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
 	mongoHealthChecker := mgo.NewHealthChecker(client)
