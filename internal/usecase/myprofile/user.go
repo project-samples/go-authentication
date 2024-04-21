@@ -22,6 +22,8 @@ type User struct {
 	Skills       []Skills      `json:"skills,omitempty" gorm:"column:skills" bson:"skills,omitempty" dynamodbav:"skills,omitempty" firestore:"skills,omitempty"`
 	Achievements []Achievement `json:"achievements,omitempty" gorm:"column:achievements" bson:"achievements,omitempty" dynamodbav:"achievements,omitempty" firestore:"achievements,omitempty"`
 	Settings     *Settings     `json:"settings,omitempty" gorm:"column:settings" bson:"settings,omitempty" dynamodbav:"settings,omitempty" firestore:"settings,omitempty"`
+	CreateTime   *time.Time    `json:"createTime" gorm:"column:create_time" bson:"createTime" dynamodbav:"createTime" firestore:"-"`
+	UpdateTime   *time.Time    `json:"updateTime" gorm:"column:update_time" bson:"updateTime" dynamodbav:"updateTime" firestore:"-"`
 }
 type Skills struct {
 	Skill   string `json:"skill,omitempty" gorm:"column:skill" bson:"skill,omitempty" dynamodbav:"skill,omitempty" firestore:"skill,omitempty" validate:"required"`

@@ -1,9 +1,6 @@
 package myprofile
 
-import (
-	"context"
-	sv "github.com/core-go/core"
-)
+import "context"
 
 type UserService interface {
 	GetMyProfile(ctx context.Context, id string) (*User, error)
@@ -11,13 +8,20 @@ type UserService interface {
 	GetMySettings(ctx context.Context, id string) (*Settings, error)
 	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
 }
-
-func NewUserService(repository sv.Repository) UserService {
+type Repository interface {
+	Get(ctx context.Context, id string, result interface{}) (bool, error)
+	Exist(ctx context.Context, id string) (bool, error)
+	Insert(ctx context.Context, model interface{}) (int64, error)
+	Update(ctx context.Context, model interface{}) (int64, error)
+	Patch(ctx context.Context, model map[string]interface{}) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
+}
+func NewUserService(repository Repository) UserService {
 	return &userService{repository: repository}
 }
 
 type userService struct {
-	repository sv.Repository
+	repository Repository
 }
 
 func (s *userService) SaveMyProfile(ctx context.Context, user map[string]interface{}) (int64, error) {

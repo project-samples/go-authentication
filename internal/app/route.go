@@ -31,34 +31,11 @@ func Route(r *mux.Router, context context.Context, root Config) error {
 	r.HandleFunc("/interests", app.Interest.Query).Methods(GET)
 	r.HandleFunc("/looking-for", app.LookingFor.Query).Methods(GET)
 
-	user := "/users"
-	r.HandleFunc(user+"/search", app.User.Search).Methods(GET, POST)
-	r.HandleFunc(user+"/{id}", app.User.Load).Methods(GET)
 
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.GetMyProfile).Methods(GET)
 	r.HandleFunc("/my-profile/{id}", app.MyProfile.SaveMyProfile).Methods(PATCH)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.GetMySettings).Methods(GET)
 	r.HandleFunc("/my-profile/{id}/settings", app.MyProfile.SaveMySettings).Methods(PATCH)
 
-	location := "/locations"
-	r.HandleFunc(location, app.Location.Search).Methods(GET)
-	r.HandleFunc(location+"/search", app.Location.Search).Methods(GET, POST)
-	r.HandleFunc(location+"/{id}", app.Location.Load).Methods(GET)
-
-	locationRate := "/locationsrate"
-	r.HandleFunc(locationRate+"/search", app.LocationRate.Search).Methods(GET, POST)
-	r.HandleFunc(locationRate+"/{id}", app.LocationRate.Load).Methods(GET)
-
-	myarticle := "/my-articles"
-	r.HandleFunc(myarticle+"/search", app.MyArticles.Search).Methods(GET, POST)
-	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Load).Methods(GET)
-	r.HandleFunc(myarticle, app.MyArticles.Create).Methods(POST)
-	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Update).Methods(PUT)
-	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Patch).Methods(PATCH)
-	r.HandleFunc(myarticle+"/{id}", app.MyArticles.Delete).Methods(DELETE)
-
-	article := "/articles"
-	r.HandleFunc(article+"/search", app.Article.Search).Methods(GET, POST)
-	r.HandleFunc(article+"/{id}", app.Article.Load).Methods(GET)
 	return err
 }

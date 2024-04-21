@@ -7,7 +7,6 @@ import (
 	sv "github.com/core-go/core"
 	"github.com/core-go/core/builder"
 	. "github.com/core-go/mail/smtp"
-	"github.com/core-go/mongo"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis/v8"
 	. "github.com/core-go/signup/mail"
@@ -16,8 +15,6 @@ import (
 
 type Config struct {
 	Server   ServerConfig      `mapstructure:"server"`
-	Mongo    mongo.MongoConfig `mapstructure:"mongo"`
-	Location mongo.MongoConfig `mapstructure:"location"`
 	Sql      sql.Config        `mapstructure:"sql"`
 	Redis    v8.Config         `mapstructure:"redis"`
 
@@ -39,6 +36,9 @@ type Config struct {
 	Tracking   builder.TrackingConfig `mapstructure:"action"`
 	ModelStatus     *sv.StatusConfig       `mapstructure:"model_status"`
 	Action     *sv.ActionConfig       `mapstructure:"action"`
+
+	ProjectId   string        `mapstructure:"project_id"`
+	Credentials string        `mapstructure:"credentials"`
 }
 
 type ServerConfig struct {
