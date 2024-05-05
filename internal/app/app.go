@@ -4,33 +4,32 @@ import (
 	"context"
 	"reflect"
 	"strings"
-
-	"firebase.google.com/go"
-	"google.golang.org/api/option"
+	"time"
 
 	. "github.com/core-go/auth"
-	af "github.com/core-go/auth/firestore"
+	ac "github.com/core-go/auth/cassandra"
 	h "github.com/core-go/auth/handler"
 	oa2 "github.com/core-go/auth/oauth2"
-	of "github.com/core-go/auth/oauth2/firestore"
+	oc "github.com/core-go/auth/oauth2/cassandra"
+	"github.com/core-go/cassandra"
+	"github.com/core-go/cassandra/passcode"
 	. "github.com/core-go/core/crypto"
 	. "github.com/core-go/core/jwt"
 	"github.com/core-go/core/shortid"
-	"github.com/core-go/firestore"
-	"github.com/core-go/firestore/passcode"
 	. "github.com/core-go/health"
 	"github.com/core-go/log"
 	. "github.com/core-go/mail"
 	. "github.com/core-go/mail/sendgrid"
 	. "github.com/core-go/mail/smtp"
 	. "github.com/core-go/password"
-	pm "github.com/core-go/password/firestore"
+	pc "github.com/core-go/password/cassandra"
 	"github.com/core-go/redis/v8"
 	. "github.com/core-go/signup"
-	sm "github.com/core-go/signup/firestore"
+	sc "github.com/core-go/signup/cassandra"
 	. "github.com/core-go/signup/mail"
 	s "github.com/core-go/sql"
 	q "github.com/core-go/sql/query"
+	"github.com/gocql/gocql"
 	_ "github.com/lib/pq"
 
 	"go-service/internal/usecase/myprofile"
@@ -57,13 +56,13 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	}
 	mongoDb := client.Database(conf.Mongo.Database)
 	 */
-	opts := option.WithCredentialsJSON([]byte(conf.Credentials))
-	app, err := firebase.NewApp(ctx, nil, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := app.Firestore(ctx)
+	cluster := gocql.NewCluster(conf.Cassandra.PublicIp)
+	cluster.Consistency = gocql.Quorum
+	cluster.ProtoVersion = 4
+	cluster.Timeout = time.Second * 1000
+	cluster.ConnectTimeout = time.Second * 1000
+	cluster.Authenticator = gocql.PasswordAuthenticator{Username: conf.Cassandra.UserName, Password: conf.Cassandra.Password}
+	session, err := cluster.CreateSession()
 	if err != nil {
 		return nil, err
 	}
@@ -87,19 +86,19 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 
 	mailService := NewMailService(conf.Mail)
 
-	userPort := af.NewUserRepositoryByConfig(client, userCollection, authentication, nil, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
+	userPort := ac.NewUserRepositoryByConfig(session, userCollection, authentication, conf.SignUp.UserStatus.Activated, conf.UserStatus, conf.Auth.Schema)
 	bcryptComparator := &BCryptStringComparator{}
 	tokenPort := NewTokenAdapter()
 	verifiedCodeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Auth.Template))
-	passcodeRepository := passcode.NewPasscodeRepository(client, "authenpasscode")
+	passcodeRepository := passcode.NewPasscodeRepository(cluster, "authenpasscode")
 	status := InitStatus(conf.Status)
 	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenPort.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passcodeRepository, conf.Auth.Expires)
 	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
 	signOutHandler := h.NewSignOutHandler(tokenPort.VerifyToken, conf.Token.Secret, tokenBlacklistChecker.Revoke, logError)
 
 	passwordResetCode := "passwordResetCode"
-	passwordRepository := pm.NewPasswordRepositoryByConfig(client, userCollection, authentication, userCollection, "userId", conf.Password.Schema)
-	passResetCodeRepository := passcode.NewPasscodeRepository(client, passwordResetCode)
+	passwordRepository := pc.NewPasswordRepositoryByConfig(session, userCollection, authentication, userCollection, "userId", conf.Password.Schema)
+	passResetCodeRepository := passcode.NewPasscodeRepository(cluster, passwordResetCode)
 	p := conf.Password
 	exps := []string{p.Exp1, p.Exp2, p.Exp3, p.Exp4, p.Exp5, p.Exp6}
 	signupSender := NewVerifiedEmailSender(mailService, *conf.SignUp.UserVerified, conf.Mail.From, NewTemplateLoaderByConfig(*conf.SignUp.Template))
@@ -109,8 +108,8 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	passwordHandler := NewPasswordHandler(passwordService, log.LogError, nil)
 
 	signupCode := "signupCode"
-	signupRepository := sm.NewSignUpRepositoryByConfig(client, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
-	signupCodeRepository := passcode.NewPasscodeRepository(client, signupCode)
+	signupRepository := sc.NewSignUpRepositoryByConfig(session, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
+	signupCodeRepository := passcode.NewPasscodeRepository(cluster, signupCode)
 	signupStatus := InitSignUpStatus(conf.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
 	signupService := NewSignUpService(signupStatus, true, signupRepository, generateId, bcryptComparator.Hash, bcryptComparator, signupCodeRepository, signupSender.Send, conf.SignUp.Expires, emailValidator.Validate, exps)
@@ -131,15 +130,18 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	services := strings.Split(conf.OAuth2.Services, ",")
 	userRepositories := make(map[string]oa2.UserRepository)
 	for _, source := range sources {
-		userRepository := of.NewUserRepositoryByConfig(client, userCollection, source, activatedStatus, services, schema, &conf.UserStatus)
+		userRepository := oc.NewUserRepositoryByConfig(session, userCollection, source, activatedStatus, services, schema, &conf.UserStatus)
 		userRepositories[source] = userRepository
 	}
-	configurationRepository := of.NewConfigurationRepository(client, integrationConfiguration, oauth2UserRepositories, "status", "A")
+	configurationRepository, err := oc.NewConfigurationRepository(session, integrationConfiguration, oauth2UserRepositories, "status", "A")
+	if err != nil {
+		return nil, err
+	}
 
 	oauth2Service := oa2.NewOAuth2Service(status, oauth2UserRepositories, userRepositories, configurationRepository, generateId, tokenPort, conf.Token, nil)
 	oauth2Handler := oa2.NewDefaultOAuth2Handler(oauth2Service, status.Error, log.LogError)
 
-	mongoHealthChecker := firestore.NewHealthChecker(ctx, []byte(conf.Credentials), conf.ProjectId)
+	cassandraHealthChecker := cassandra.NewHealthChecker(cluster)
 	redisHealthChecker := v8.NewHealthChecker(redisPort.Client)
 
 	skillService := q.NewStringService(db, "skills", "skill")
@@ -150,11 +152,11 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	lookingForHandler := q.NewQueryHandler(lookingForService.Load, log.LogError)
 
 	myprofileType := reflect.TypeOf(myprofile.User{})
-	userRepository := firestore.NewRepository(client, "user", myprofileType, "CreateTime", "UpdateTime")
+	userRepository, err := cassandra.NewRepository(cluster, "user", myprofileType)
 	myProfileService := myprofile.NewUserService(userRepository)
 	myProfileHandler, err := myprofile.NewMyProfileHandler(myProfileService, log.LogError, skillService.Save, interestService.Save, lookingForService.Save)
 
-	healthHandler := NewHandler(redisHealthChecker, mongoHealthChecker)
+	healthHandler := NewHandler(redisHealthChecker, cassandraHealthChecker)
 
 	appCtx := ApplicationContext{
 		Health:         healthHandler,
