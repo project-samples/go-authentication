@@ -18,7 +18,7 @@ mail:
   from:
     name: Supporter
     address: test@gmail.com
-  provider: sendgrid
+  provider: mock
   api_key:
   smtp:
     host: smtp.gmail.com

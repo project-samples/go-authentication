@@ -22,6 +22,7 @@ import (
 	. "github.com/core-go/mail/smtp"
 	mgo "github.com/core-go/mongo"
 	"github.com/core-go/mongo/geo"
+	"github.com/core-go/mongo/passcode"
 	. "github.com/core-go/password"
 	pm "github.com/core-go/password/mongo"
 	"github.com/core-go/redis/v8"
@@ -42,6 +43,8 @@ import (
 	"go-service/internal/usecase/myprofile"
 	"go-service/internal/usecase/rate"
 	"go-service/internal/usecase/user"
+
+	ml "go-service/pkg/mail"
 )
 
 type ApplicationContext struct {
@@ -99,7 +102,7 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	bcryptComparator := &BCryptStringComparator{}
 	tokenPort := NewTokenAdapter()
 	verifiedCodeSender := NewPasscodeSender(mailService, conf.Mail.From, NewTemplateLoaderByConfig(conf.Auth.Template))
-	passcodeRepository := mgo.NewPasscodeRepository(mongoDb, "authenpasscode")
+	passcodeRepository := passcode.NewPasscodeRepository(mongoDb, "authenpasscode")
 	status := InitStatus(conf.Status)
 	authenticator := NewAuthenticatorWithTwoFactors(status, userPort, bcryptComparator, tokenPort.GenerateToken, conf.Token, conf.Payload, nil, verifiedCodeSender.Send, passcodeRepository, conf.Auth.Expires)
 	authenticationHandler := h.NewAuthenticationHandler(authenticator.Authenticate, status.Error, status.Timeout, logError)
@@ -116,9 +119,9 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 	passwordService := NewPasswordService(bcryptComparator, passwordRepository, conf.Password.ResetExpires, passResetCodeRepository, passwordResetSender.Send, tokenBlacklistChecker.RevokeAllTokens, exps, 5, nil, conf.Password.ChangeExpires, passResetCodeRepository, passwordChangeSender.Send)
 	passwordHandler := NewPasswordHandler(passwordService, log.LogError, nil)
 
-	signupCode := "signupCode"
+	signupCode := "signupcode"
 	signupRepository := sm.NewSignUpRepositoryByConfig(mongoDb, userCollection, authentication, conf.SignUp.UserStatus, conf.MaxPasswordAge, conf.SignUp.Schema, nil)
-	signupCodeRepository := mgo.NewPasscodeRepository(mongoDb, signupCode)
+	signupCodeRepository := passcode.NewPasscodeRepository(mongoDb, signupCode)
 	signupStatus := InitSignUpStatus(conf.SignUp.Status)
 	emailValidator := NewEmailValidator(true, "")
 	signupService := NewSignUpService(signupStatus, true, signupRepository, generateId, bcryptComparator.Hash, bcryptComparator, signupCodeRepository, signupSender.Send, conf.SignUp.Expires, emailValidator.Validate, exps)
@@ -220,6 +223,9 @@ func NewApp(ctx context.Context, conf Config) (*ApplicationContext, error) {
 }
 
 func NewMailService(mailConfig MailConfig) SimpleMailSender {
+	if mailConfig.Provider == "mock" {
+		return ml.NewMockMailSender()
+	}
 	if mailConfig.Provider == "sendgrid" {
 		return NewSimpleMailSender(NewSendGridMailSender(mailConfig.APIkey))
 	}
