@@ -92,7 +92,7 @@ sign_up:
     activated: A
   schema:
     user_id: userId
-    user_name: userName
+    username: username
     contact: email
     signed_up_time: signedUpTime
     language: language
@@ -153,7 +153,7 @@ password:
   reset_expires: 420
   schema:
     user_id: userId
-    user_name: userName
+    username: username
     to_address: email
     password: password
     changed_time: passwordModifiedTime
