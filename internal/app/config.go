@@ -1,9 +1,9 @@
 package app
 
 import (
-	. "github.com/core-go/auth"
-	. "github.com/core-go/auth/mail"
-	o2 "github.com/core-go/auth/oauth2"
+	. "github.com/core-go/authentication"
+	. "github.com/core-go/authentication/mail"
+	o2 "github.com/core-go/authentication/oauth2"
 	sv "github.com/core-go/core"
 	"github.com/core-go/core/builder"
 	. "github.com/core-go/mail/smtp"
@@ -36,9 +36,9 @@ type Config struct {
 	Mail                  MailConfig                    `mapstructure:"mail"`
 	CallBackURL           o2.CallbackURL                `mapstructure:"callback_url"`
 
-	Tracking   builder.TrackingConfig `mapstructure:"action"`
-	ModelStatus     *sv.StatusConfig       `mapstructure:"model_status"`
-	Action     *sv.ActionConfig       `mapstructure:"action"`
+	Tracking    builder.TrackingConfig `mapstructure:"action"`
+	ModelStatus *sv.StatusConfig       `mapstructure:"model_status"`
+	Action      *sv.ActionConfig       `mapstructure:"action"`
 }
 
 type ServerConfig struct {
