@@ -7,19 +7,16 @@ import (
 	"reflect"
 
 	sv "github.com/core-go/core"
-	v "github.com/core-go/core/validator"
 )
 
-func NewMyProfileHandler(service UserService, logError func(context.Context, string, ...map[string]interface{}),
+func NewMyProfileHandler(service UserService,
+	validate func(ctx context.Context, user *User) ([]sv.ErrorMessage, error),
+	logError func(context.Context, string, ...map[string]interface{}),
 	saveSkills func(ctx context.Context, values []string) (int64, error),
 	saveInterests func(ctx context.Context, values []string) (int64, error),
-	saveLookingFor func(ctx context.Context, values []string) (int64, error)) (*MyProfileHandler, error) {
+	saveLookingFor func(ctx context.Context, values []string) (int64, error)) *MyProfileHandler {
 	keys, indexes, _ := sv.BuildMapField(reflect.TypeOf(User{}))
-	validator, err := v.NewValidator[*User]()
-	if err != nil {
-		return nil, err
-	}
-	return &MyProfileHandler{service: service, Validate: validator.Validate, LogError: logError, Keys: keys, Indexes: indexes, SaveSkills: saveSkills, SaveInterests: saveInterests, SaveLookingFor: saveLookingFor}, err
+	return &MyProfileHandler{service: service, Validate: validate, LogError: logError, Keys: keys, Indexes: indexes, SaveSkills: saveSkills, SaveInterests: saveInterests, SaveLookingFor: saveLookingFor}
 }
 
 type MyProfileHandler struct {

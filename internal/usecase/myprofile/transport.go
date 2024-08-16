@@ -2,9 +2,11 @@ package myprofile
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
+	v "github.com/core-go/core/validator"
 	repo "github.com/core-go/mongo/repository"
 )
 
@@ -20,7 +22,12 @@ func NewMyProfileTransport(db *mongo.Database, logError func(context.Context, st
 	saveInterests func(ctx context.Context, values []string) (int64, error),
 	saveLookingFor func(ctx context.Context, values []string) (int64, error)) (*MyProfileHandler, error) {
 
+	validator, err := v.NewValidator[*User]()
+	if err != nil {
+		return nil, err
+	}
 	repository := repo.NewRepository[User, string](db, "user")
 	service := NewUserService(repository)
-	return NewMyProfileHandler(service, logError, saveSkills, saveInterests, saveLookingFor)
+	handler := NewMyProfileHandler(service, validator.Validate, logError, saveSkills, saveInterests, saveLookingFor)
+	return handler, nil
 }

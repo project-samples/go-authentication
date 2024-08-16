@@ -9,18 +9,18 @@ type UserService interface {
 	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
 }
 
-func NewUserService(repository UserRepository) UserService {
-	return &userService{repository: repository}
+func NewUserService(repository UserRepository) *UserUseCase {
+	return &UserUseCase{repository: repository}
 }
 
-type userService struct {
+type UserUseCase struct {
 	repository UserRepository
 }
 
-func (s *userService) SaveMyProfile(ctx context.Context, user map[string]interface{}) (int64, error) {
+func (s *UserUseCase) SaveMyProfile(ctx context.Context, user map[string]interface{}) (int64, error) {
 	return s.repository.Patch(ctx, user)
 }
-func (s *userService) GetMyProfile(ctx context.Context, id string) (*User, error) {
+func (s *UserUseCase) GetMyProfile(ctx context.Context, id string) (*User, error) {
 	user, err := s.repository.Load(ctx, id)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (s *userService) GetMyProfile(ctx context.Context, id string) (*User, error
 	}
 	return user, nil
 }
-func (s *userService) GetMySettings(ctx context.Context, id string) (*Settings, error) {
+func (s *UserUseCase) GetMySettings(ctx context.Context, id string) (*Settings, error) {
 	user, err := s.repository.Load(ctx, id)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (s *userService) GetMySettings(ctx context.Context, id string) (*Settings, 
 	}
 	return nil, nil
 }
-func (s *userService) SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error) {
+func (s *UserUseCase) SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error) {
 	user := make(map[string]interface{})
 	user["userId"] = id
 	user["settings"] = settings
