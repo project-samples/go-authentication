@@ -1,9 +1,6 @@
 package myprofile
 
-import (
-	"context"
-	sv "github.com/core-go/core"
-)
+import "context"
 
 type UserService interface {
 	GetMyProfile(ctx context.Context, id string) (*User, error)
@@ -12,35 +9,36 @@ type UserService interface {
 	SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error)
 }
 
-func NewUserService(repository sv.Repository) UserService {
+func NewUserService(repository UserRepository) UserService {
 	return &userService{repository: repository}
 }
 
 type userService struct {
-	repository sv.Repository
+	repository UserRepository
 }
 
 func (s *userService) SaveMyProfile(ctx context.Context, user map[string]interface{}) (int64, error) {
 	return s.repository.Patch(ctx, user)
 }
 func (s *userService) GetMyProfile(ctx context.Context, id string) (*User, error) {
-	var user User
-	ok, err := s.repository.Get(ctx, id, &user)
-	if !ok {
+	user, err := s.repository.Load(ctx, id)
+	if err != nil {
 		return nil, err
-	} else {
-		user.Settings = nil
-		return &user, err
 	}
+	if user != nil {
+		user.Settings = nil
+	}
+	return user, nil
 }
 func (s *userService) GetMySettings(ctx context.Context, id string) (*Settings, error) {
-	var user User
-	ok, err := s.repository.Get(ctx, id, &user)
-	if !ok {
+	user, err := s.repository.Load(ctx, id)
+	if err != nil {
 		return nil, err
-	} else {
+	}
+	if user != nil {
 		return user.Settings, nil
 	}
+	return nil, nil
 }
 func (s *userService) SaveMySettings(ctx context.Context, id string, settings *Settings) (int64, error) {
 	user := make(map[string]interface{})

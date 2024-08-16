@@ -4,10 +4,7 @@ import (
 	. "github.com/core-go/authentication"
 	. "github.com/core-go/authentication/mail"
 	o2 "github.com/core-go/authentication/oauth2"
-	sv "github.com/core-go/core"
-	"github.com/core-go/core/builder"
 	. "github.com/core-go/mail/smtp"
-	"github.com/core-go/mongo"
 	. "github.com/core-go/password/mail"
 	"github.com/core-go/redis/v8"
 	. "github.com/core-go/signup/mail"
@@ -15,11 +12,11 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig      `mapstructure:"server"`
-	Mongo    mongo.MongoConfig `mapstructure:"mongo"`
-	Location mongo.MongoConfig `mapstructure:"location"`
-	Sql      sql.Config        `mapstructure:"sql"`
-	Redis    v8.Config         `mapstructure:"redis"`
+	Server   ServerConfig `mapstructure:"server"`
+	Mongo    MongoConfig  `mapstructure:"mongo"`
+	Location MongoConfig  `mapstructure:"location"`
+	Sql      sql.Config   `mapstructure:"sql"`
+	Redis    v8.Config    `mapstructure:"redis"`
 
 	MaxPasswordFailed     int                           `mapstructure:"max_password_failed"`
 	LockedMinutes         int                           `mapstructure:"locked_minutes"`
@@ -35,13 +32,14 @@ type Config struct {
 	OAuth2                o2.OAuth2Config               `mapstructure:"oauth2"`
 	Mail                  MailConfig                    `mapstructure:"mail"`
 	CallBackURL           o2.CallbackURL                `mapstructure:"callback_url"`
-
-	Tracking    builder.TrackingConfig `mapstructure:"action"`
-	ModelStatus *sv.StatusConfig       `mapstructure:"model_status"`
-	Action      *sv.ActionConfig       `mapstructure:"action"`
 }
 
 type ServerConfig struct {
 	Name string `mapstructure:"name" json:"name,omitempty" gorm:"column:name" bson:"name,omitempty" dynamodbav:"name,omitempty" firestore:"name,omitempty"`
 	Port *int64 `mapstructure:"port" json:"port,omitempty" gorm:"column:port" bson:"port,omitempty" dynamodbav:"port,omitempty" firestore:"port,omitempty"`
+}
+
+type MongoConfig struct {
+	Uri      string `yaml:"uri" mapstructure:"uri" json:"uri,omitempty" gorm:"column:uri" bson:"uri,omitempty" dynamodbav:"uri,omitempty" firestore:"uri,omitempty"`
+	Database string `yaml:"database" mapstructure:"database" json:"database,omitempty" gorm:"column:database" bson:"database,omitempty" dynamodbav:"database,omitempty" firestore:"database,omitempty"`
 }

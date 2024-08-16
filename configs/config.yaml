@@ -5,9 +5,6 @@ server:
 mongo:
   uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
   database: user
-location:
-  uri: mongodb+srv://dbUser:Demoaccount1@projectdemo.g0lah.mongodb.net
-  database: location
 sql:
   driver: postgres
   data_source_name: host=localhost port=5432 user=postgres dbname=masterdata sslmode=disable password=abcd1234

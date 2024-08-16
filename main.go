@@ -14,11 +14,11 @@ import (
 )
 
 func main() {
-	conf := app.Config{}
-	config.Load(&conf, "configs/config")
+	cfg := app.Config{}
+	config.Load(&cfg, "configs/config")
 
 	r := mux.NewRouter()
-	er2 := app.Route(r, context.Background(), conf)
+	er2 := app.Route(r, context.Background(), cfg)
 	if er2 != nil {
 		panic(er2)
 	}
@@ -29,8 +29,8 @@ func main() {
 		StartServer(handlers.CORS(originsOk, headersOk, methodsOk)(r), conf.Server)
 	*/
 	handler := cors.AllowAll().Handler(r)
-	fmt.Println("Start service " + conf.Server.Name)
-	if err := http.ListenAndServe(Addr(conf.Server.Port), handler); err != nil {
+	fmt.Println("Start service " + cfg.Server.Name)
+	if err := http.ListenAndServe(Addr(cfg.Server.Port), handler); err != nil {
 		panic(err)
 	}
 }

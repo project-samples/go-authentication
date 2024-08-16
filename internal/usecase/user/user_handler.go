@@ -2,36 +2,56 @@ package user
 
 import (
 	"context"
-	sv "github.com/core-go/core"
-	"github.com/core-go/search"
+	"fmt"
 	"net/http"
 	"reflect"
+
+	sv "github.com/core-go/core"
+	s "github.com/core-go/search"
 )
 
-type UserHandler interface {
+type UserTransport interface {
 	Search(w http.ResponseWriter, r *http.Request)
 	Load(w http.ResponseWriter, r *http.Request)
 }
 
-func NewUserHandler(find func(context.Context, interface{}, interface{}, int64, int64) (int64, error), load func(ctx context.Context, id interface{}, result interface{}) (bool, error), logError func(context.Context, string, ...map[string]interface{}), writeLog func(context.Context, string, string, bool, string) error) UserHandler {
-	searchModelType := reflect.TypeOf(UserFilter{})
-	modelType := reflect.TypeOf(User{})
-	searchHandler := search.NewSearchHandler(find, modelType, searchModelType, logError, writeLog)
-	return &userHandler{load: load, SearchHandler: searchHandler, Error: logError, Log: writeLog}
+func NewUserHandler(query UserQuery, logError func(context.Context, string, ...map[string]interface{})) UserTransport {
+	paramIndex, filterIndex := s.BuildParams(reflect.TypeOf(UserFilter{}))
+	return &UserHandler{Query: query, LogError: logError, paramIndex: paramIndex, filterIndex: filterIndex}
 }
 
-type userHandler struct {
-	load func(ctx context.Context, id interface{}, result interface{}) (bool, error)
-	*search.SearchHandler
-	Error func(context.Context, string, ...map[string]interface{})
-	Log   func(context.Context, string, string, bool, string) error
+type UserHandler struct {
+	Query       UserQuery
+	LogError    func(context.Context, string, ...map[string]interface{})
+	paramIndex  map[string]int
+	filterIndex int
 }
 
-func (h *userHandler) Load(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) Load(w http.ResponseWriter, r *http.Request) {
 	id := sv.GetRequiredParam(w, r)
 	if len(id) > 0 {
-		var user User
-		ok, err := h.load(r.Context(), id, &user)
-		sv.RespondIfFound(w, r, user, ok, err, h.Error, nil)
+		user, err := h.Query.Load(r.Context(), id)
+		if err != nil {
+			h.LogError(r.Context(), fmt.Sprintf("Error to get user %s: %s", id, err.Error()))
+			http.Error(w, sv.InternalServerError, http.StatusInternalServerError)
+			return
+		}
+		if user == nil {
+			sv.JSON(w, http.StatusNotFound, user)
+		} else {
+			sv.JSON(w, http.StatusOK, user)
+		}
 	}
+}
+func (h *UserHandler) Search(w http.ResponseWriter, r *http.Request) {
+	filter := UserFilter{Filter: &s.Filter{}}
+	s.Decode(r, &filter, h.paramIndex, h.filterIndex)
+
+	offset := s.GetOffset(filter.Limit, filter.Page)
+	users, total, err := h.Query.Search(r.Context(), &filter, filter.Limit, offset)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sv.JSON(w, http.StatusOK, &s.Result{List: &users, Total: total})
 }

@@ -1,22 +1,26 @@
 package user
 
 import (
+	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/core-go/mongo"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"reflect"
 )
+
+type UserQuery interface {
+	Load(ctx context.Context, id string) (*User, error)
+	Search(ctx context.Context, filter *UserFilter, limit int64, offset int64) ([]User, int64, error)
+}
 
 var user User
 
-func BuildQuery(param interface{}) (bson.D, bson.M) {
+func BuildQuery(filter *UserFilter) (bson.D, bson.M) {
 	var query = bson.D{}
 	var fields = bson.M{}
-	filter, ok := param.(*UserFilter)
-	if !ok {
-		return query, fields
-	}
 	if len(filter.Fields) > 0 {
 		userType := reflect.TypeOf(user)
 		for _, key := range filter.Fields {
